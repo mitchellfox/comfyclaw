@@ -11,8 +11,8 @@
       --bg-2: #0f1117;
       --surface: rgba(22, 24, 33, 0.88);
       --surface-2: rgba(28, 30, 42, 0.92);
-      --accent: #e85d4a;
-      --accent-soft: rgba(232, 93, 74, 0.16);
+      --accent: #00e5ff;
+      --accent-soft: rgba(0, 229, 255, 0.15);
       --text: #f5f6fa;
       --muted: #9ca3af;
       --danger: #f35d6a;
@@ -32,8 +32,8 @@
     body {
       margin: 0;
       background:
-        radial-gradient(circle at top center, rgba(232, 93, 74, 0.18), transparent 45%),
-        radial-gradient(circle at 15% 20%, rgba(232, 93, 74, 0.08), transparent 40%),
+        radial-gradient(circle at top center, rgba(0, 229, 255, 0.18), transparent 45%),
+        radial-gradient(circle at 15% 20%, rgba(0, 229, 255, 0.08), transparent 40%),
         var(--bg);
       color: var(--text);
       min-height: 100vh;
@@ -91,7 +91,7 @@
     .tab.active {
       background: var(--accent);
       color: #fff;
-      box-shadow: 0 0 20px rgba(232, 93, 74, 0.35);
+      box-shadow: 0 0 20px rgba(0, 229, 255, 0.35);
     }
 
     main {
@@ -132,7 +132,7 @@
 
     .card:hover {
       transform: translateY(-3px);
-      border-color: rgba(232, 93, 74, 0.45);
+      border-color: rgba(0, 229, 255, 0.45);
       box-shadow: 0 16px 34px rgba(0, 0, 0, 0.5);
     }
 
@@ -167,8 +167,8 @@
 
     input:focus, textarea:focus, select:focus {
       outline: none;
-      border-color: rgba(232, 93, 74, 0.6);
-      box-shadow: 0 0 0 2px rgba(232, 93, 74, 0.15);
+      border-color: rgba(0, 229, 255, 0.6);
+      box-shadow: 0 0 0 2px rgba(0, 229, 255, 0.15);
     }
 
     textarea { min-height: 90px; }
@@ -182,7 +182,7 @@
       cursor: pointer;
       font-weight: 600;
       transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
-      box-shadow: 0 10px 20px rgba(232, 93, 74, 0.25);
+      box-shadow: 0 10px 20px rgba(0, 229, 255, 0.25);
     }
 
     button:hover { transform: translateY(-1px); }
@@ -299,7 +299,7 @@
       background: var(--accent);
       border-color: var(--accent);
       color: #fff;
-      box-shadow: 0 0 16px rgba(232, 93, 74, 0.35);
+      box-shadow: 0 0 16px rgba(0, 229, 255, 0.35);
     }
 
     .run-panel {
@@ -378,7 +378,7 @@
 
     .gallery-card:hover {
       transform: translateY(-2px);
-      border-color: rgba(232, 93, 74, 0.3);
+      border-color: rgba(0, 229, 255, 0.3);
       box-shadow: 0 14px 28px rgba(0,0,0,0.45);
     }
 
@@ -472,6 +472,7 @@
       <button class="tab" data-tab="workflows">Workflows</button>
       <button class="tab" data-tab="pipelines">Pipelines</button>
       <button class="tab" data-tab="gallery">Gallery</button>
+      <button class="tab" data-tab="gateway">⚡ Gateway</button>
     </div>
   </header>
 
@@ -517,6 +518,43 @@
         </div>
       </div>
       <div id="gallery-list" class="gallery-grid"></div>
+    </section>
+
+    <section id="gateway" class="panel hidden">
+      <div class="section-title">
+        <h2>⚡ Gateway</h2>
+        <div class="row" style="gap:8px;align-items:center">
+          <span id="gw-status-dot" style="width:10px;height:10px;border-radius:50%;background:#f35d6a;display:inline-block"></span>
+          <span id="gw-status-text" style="color:var(--muted);font-size:13px">Checking...</span>
+        </div>
+      </div>
+
+      <div style="display:grid;gap:16px;grid-template-columns:1fr 1fr;margin-top:16px">
+        <div class="panel" style="background:var(--surface-2)">
+          <h3 style="font-size:14px;margin:0 0 8px">🌐 Public URL</h3>
+          <div style="display:flex;gap:8px;align-items:center">
+            <code style="background:var(--bg);padding:8px 12px;border-radius:8px;flex:1;font-size:13px">https://comfyclaw.app</code>
+            <button class="secondary" onclick="navigator.clipboard.writeText('https://comfyclaw.app')" style="padding:6px 12px">Copy</button>
+          </div>
+        </div>
+        <div class="panel" style="background:var(--surface-2)">
+          <h3 style="font-size:14px;margin:0 0 8px">📊 Queue</h3>
+          <div id="gw-stats" style="color:var(--muted);font-size:13px">—</div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px">
+        <h3 style="font-size:15px;margin:0 0 12px">Published Workflows</h3>
+        <div id="gw-workflows" style="display:grid;gap:8px"></div>
+      </div>
+
+      <div style="margin-top:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <h3 style="font-size:15px;margin:0">API Keys</h3>
+          <button class="secondary" onclick="gwCreateKey()" style="padding:6px 14px;font-size:12px">+ Create Key</button>
+        </div>
+        <div id="gw-keys" style="display:grid;gap:8px"></div>
+      </div>
     </section>
   </main>
 
@@ -625,13 +663,135 @@
       document.getElementById('workflows').classList.toggle('hidden', id !== 'workflows');
       document.getElementById('pipelines').classList.toggle('hidden', id !== 'pipelines');
       document.getElementById('gallery').classList.toggle('hidden', id !== 'gallery');
+      document.getElementById('gateway').classList.toggle('hidden', id !== 'gateway');
       if (id === 'gallery') {
         refreshGallery();
       }
       if (id === 'pipelines') {
         renderPipelines();
       }
+      if (id === 'gateway') {
+        gwRefresh();
+      }
     }
+
+    // --- Gateway Integration ---
+    const GW_URL = 'http://localhost:8788';
+    let gwOnline = false;
+
+    async function gwApi(path, opts = {}) {
+      const res = await fetch(GW_URL + path, opts);
+      return res;
+    }
+
+    async function gwRefresh() {
+      // Check health
+      const dot = document.getElementById('gw-status-dot');
+      const text = document.getElementById('gw-status-text');
+      const stats = document.getElementById('gw-stats');
+      try {
+        const res = await fetch(GW_URL + '/api/v1/health');
+        const data = await res.json();
+        gwOnline = true;
+        dot.style.background = 'var(--success)';
+        text.textContent = 'Online';
+        const gpu = data.gpu_info?.devices?.[0];
+        const vramTotal = gpu ? (gpu.vram_total / 1e9).toFixed(1) : '?';
+        const vramFree = gpu ? (gpu.vram_free / 1e9).toFixed(1) : '?';
+        stats.innerHTML = `Queue: <strong>${data.queue_depth}</strong> jobs &nbsp;|&nbsp; GPU: ${gpu?.name?.split(':')[0]?.replace('cuda:0 ','') || '?'} &nbsp;|&nbsp; VRAM: ${vramFree}/${vramTotal} GB free`;
+      } catch(e) {
+        gwOnline = false;
+        dot.style.background = 'var(--danger)';
+        text.textContent = 'Offline — start with: comfyclaw gateway start';
+        stats.innerHTML = '—';
+      }
+      // Render workflows with publish toggles
+      gwRenderWorkflows();
+      // Render API keys (only if online)
+      if (gwOnline) gwRenderKeys();
+    }
+
+    function gwRenderWorkflows() {
+      const el = document.getElementById('gw-workflows');
+      if (!state.workflows?.length) { el.innerHTML = '<div style="color:var(--muted)">No workflows configured</div>'; return; }
+      el.innerHTML = state.workflows.map(wf => {
+        const pub = wf.published ? true : false;
+        const primaryCount = (wf.primaryInputNodes || []).length;
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface-2);border:1px solid var(--border);border-radius:12px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:1.3em">${wf.emoji || '🧩'}</span>
+            <div>
+              <div style="font-weight:600;font-size:14px">${wf.title || 'Untitled'}${pub ? ' <span style="background:rgba(0,229,255,0.15);color:var(--accent);padding:2px 8px;border-radius:99px;font-size:11px;font-weight:500;margin-left:6px">PUBLISHED</span>' : ''}</div>
+              <div style="font-size:12px;color:var(--muted)">${primaryCount} inputs exposed</div>
+            </div>
+          </div>
+          <label style="position:relative;width:44px;height:24px;cursor:pointer">
+            <input type="checkbox" ${pub ? 'checked' : ''} onchange="gwTogglePublish('${wf.id}', this.checked)" style="opacity:0;width:0;height:0">
+            <span style="position:absolute;inset:0;background:${pub ? 'var(--accent)' : 'var(--border)'};border-radius:24px;transition:0.2s"></span>
+            <span style="position:absolute;top:3px;left:${pub ? '23px' : '3px'};width:18px;height:18px;background:#fff;border-radius:50%;transition:0.2s"></span>
+          </label>
+        </div>`;
+      }).join('');
+    }
+
+    async function gwTogglePublish(wfId, publish) {
+      const wf = state.workflows.find(w => w.id === wfId);
+      if (!wf) return;
+      wf.published = publish;
+      await api.put('/api/workflows/' + wfId, wf);
+      gwRenderWorkflows();
+    }
+
+    async function gwRenderKeys() {
+      const el = document.getElementById('gw-keys');
+      try {
+        const res = await fetch(GW_URL + '/api/v1/keys');
+        if (res.status === 401) { el.innerHTML = '<div style="color:var(--muted)">No API keys configured (open access mode)</div>'; return; }
+        const keys = await res.json();
+        if (!keys.length) { el.innerHTML = '<div style="color:var(--muted)">No API keys — gateway runs in open mode</div>'; return; }
+        el.innerHTML = keys.map(k => `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px">
+          <div>
+            <code style="font-size:12px">${k.key}</code>
+            <span style="color:var(--muted);font-size:12px;margin-left:8px">${k.label}</span>
+          </div>
+          <button class="secondary" onclick="gwRevokeKey('${k.full_key}')" style="padding:4px 10px;font-size:11px;color:var(--danger)">Revoke</button>
+        </div>`).join('');
+      } catch(e) {
+        el.innerHTML = '<div style="color:var(--muted)">Could not load keys</div>';
+      }
+    }
+
+    async function gwCreateKey() {
+      const label = prompt('Label for the new API key:');
+      if (!label) return;
+      try {
+        const res = await fetch(GW_URL + '/api/v1/keys/create', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({label})
+        });
+        const data = await res.json();
+        if (data.key) {
+          await navigator.clipboard.writeText(data.key);
+          alert('Key created and copied to clipboard:\\n\\n' + data.key);
+          gwRenderKeys();
+        }
+      } catch(e) { alert('Failed to create key'); }
+    }
+
+    async function gwRevokeKey(key) {
+      if (!confirm('Revoke this key?')) return;
+      try {
+        await fetch(GW_URL + '/api/v1/keys/revoke', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({key})
+        });
+        gwRenderKeys();
+      } catch(e) { alert('Failed to revoke'); }
+    }
+
+    setInterval(() => { if (document.getElementById('gateway') && !document.getElementById('gateway').classList.contains('hidden')) gwRefresh(); }, 10000);
 
     async function load() {
       state.servers = await api.get('/api/servers');
