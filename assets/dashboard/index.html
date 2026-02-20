@@ -1,0 +1,1665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ComfyClaw Dashboard</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0a0a0f;
+      --bg-2: #0f1117;
+      --surface: rgba(22, 24, 33, 0.88);
+      --surface-2: rgba(28, 30, 42, 0.92);
+      --accent: #e85d4a;
+      --accent-soft: rgba(232, 93, 74, 0.16);
+      --text: #f5f6fa;
+      --muted: #9ca3af;
+      --danger: #f35d6a;
+      --success: #22c55e;
+      --warning: #fbbf24;
+      --border: rgba(255, 255, 255, 0.08);
+      --glow: 0 0 0 1px rgba(255, 255, 255, 0.02), 0 16px 40px rgba(0, 0, 0, 0.4);
+      --radius-lg: 16px;
+      --radius-md: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at top center, rgba(232, 93, 74, 0.18), transparent 45%),
+        radial-gradient(circle at 15% 20%, rgba(232, 93, 74, 0.08), transparent 40%),
+        var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 28px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(10, 10, 15, 0.8);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+
+    header h1 {
+      font-size: 20px;
+      margin: 0;
+      letter-spacing: 0.4px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    header h1 span {
+      color: var(--accent);
+      font-weight: 800;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.02);
+      padding: 6px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+    }
+
+    .tab {
+      padding: 8px 18px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      transition: all 0.15s ease;
+    }
+
+    .tab.active {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 0 20px rgba(232, 93, 74, 0.35);
+    }
+
+    main {
+      padding: 28px;
+      display: grid;
+      gap: 20px;
+    }
+
+    .hidden { display: none; }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: var(--glow);
+      backdrop-filter: blur(10px);
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid.cards {
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+
+    .card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(232, 93, 74, 0.45);
+      box-shadow: 0 16px 34px rgba(0, 0, 0, 0.5);
+    }
+
+    .card h3 {
+      margin: 0 0 6px 0;
+      font-weight: 700;
+    }
+
+    h2, h3, strong {
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .muted { color: var(--muted); }
+
+    .row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      background: rgba(10, 10, 15, 0.8);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: rgba(232, 93, 74, 0.6);
+      box-shadow: 0 0 0 2px rgba(232, 93, 74, 0.15);
+    }
+
+    textarea { min-height: 90px; }
+
+    button {
+      background: var(--accent);
+      color: white;
+      border: 1px solid transparent;
+      padding: 10px 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      box-shadow: 0 10px 20px rgba(232, 93, 74, 0.25);
+    }
+
+    button:hover { transform: translateY(-1px); }
+
+    button.secondary {
+      background: rgba(18, 18, 26, 0.8);
+      border: 1px solid var(--border);
+      color: var(--text);
+      box-shadow: none;
+    }
+
+    button.danger {
+      background: transparent;
+      border: 1px solid rgba(243, 93, 106, 0.5);
+      color: #f8c2c7;
+      box-shadow: none;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+      background: var(--muted);
+      box-shadow: 0 0 0 rgba(255,255,255,0);
+    }
+
+    .status-dot.ok { background: var(--success); box-shadow: 0 0 12px rgba(34, 197, 94, 0.6); }
+    .status-dot.fail { background: var(--danger); box-shadow: 0 0 12px rgba(243, 93, 106, 0.6); }
+
+    .workflow-detail {
+      margin-top: 16px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .node-list {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      min-height: 120px;
+    }
+
+    .node-item {
+      background: rgba(9, 10, 14, 0.85);
+      border: 1px solid var(--border);
+      padding: 10px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+
+    .node-item:last-child { margin-bottom: 0; }
+
+    .pill {
+      background: var(--accent-soft);
+      color: var(--accent);
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      margin-left: 6px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    details summary {
+      cursor: pointer;
+      margin-bottom: 8px;
+    }
+
+    .output-list {
+      margin-top: 16px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 12px;
+    }
+
+    .banner {
+      padding: 14px 16px;
+      border-radius: var(--radius-lg);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      margin-bottom: 12px;
+      box-shadow: var(--glow);
+    }
+
+    .workflow-tabs {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+      flex-wrap: wrap;
+    }
+
+    .workflow-tab {
+      border: 1px solid var(--border);
+      background: rgba(10, 10, 15, 0.6);
+      color: var(--muted);
+      padding: 6px 16px;
+      border-radius: 999px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.15s ease;
+    }
+
+    .workflow-tab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      box-shadow: 0 0 16px rgba(232, 93, 74, 0.35);
+    }
+
+    .run-panel {
+      display: grid;
+      gap: 12px;
+    }
+
+    .run-panel > button {
+      padding: 12px 18px;
+      font-size: 16px;
+    }
+
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(10, 10, 15, 0.7);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    .status-pulse {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+    }
+
+    .status-pulse::before {
+      content: '';
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--warning);
+      box-shadow: 0 0 12px rgba(251, 191, 36, 0.7);
+      animation: pulse 1.6s ease-in-out infinite;
+    }
+
+    .status-pulse.complete::before {
+      background: var(--success);
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.7);
+      animation: none;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.9); opacity: 0.7; }
+      50% { transform: scale(1.2); opacity: 1; }
+      100% { transform: scale(0.9); opacity: 0.7; }
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .gallery-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .gallery-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(232, 93, 74, 0.3);
+      box-shadow: 0 14px 28px rgba(0,0,0,0.45);
+    }
+
+    .gallery-thumb {
+      width: 100%;
+      height: 200px;
+      border-radius: 12px;
+      background: rgba(10, 10, 15, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      cursor: pointer;
+    }
+
+    .gallery-thumb img,
+    .gallery-thumb video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .gallery-meta {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .tag {
+      background: var(--accent-soft);
+      color: var(--accent);
+      padding: 2px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(7,7,10,0.82);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 10;
+      backdrop-filter: blur(6px);
+    }
+
+    .modal.active { display: flex; }
+
+    .modal-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 18px;
+      max-width: 900px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+    }
+
+    .modal-media img,
+    .modal-media video {
+      width: 100%;
+      max-height: 520px;
+      object-fit: contain;
+      border-radius: 14px;
+      background: rgba(10, 10, 15, 0.8);
+    }
+
+    .modal-sidebar {
+      display: grid;
+      gap: 10px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 900px) {
+      header { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .modal-card { grid-template-columns: 1fr; }
+      .workflow-detail { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>⚡ <span>ComfyClaw</span> Dashboard</h1>
+    <div class="tabs">
+      <button class="tab active" data-tab="servers">Servers</button>
+      <button class="tab" data-tab="workflows">Workflows</button>
+      <button class="tab" data-tab="pipelines">Pipelines</button>
+      <button class="tab" data-tab="gallery">Gallery</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="servers" class="panel">
+      <div class="section-title">
+        <h2>Servers</h2>
+        <button id="add-server">Add Server</button>
+      </div>
+      <div id="servers-list" class="grid"></div>
+    </section>
+
+    <section id="workflows" class="panel hidden">
+      <div class="section-title">
+        <h2>Workflows</h2>
+        <div class="row">
+          <button id="add-workflow">Add Workflow</button>
+          <button id="import-workflow" class="secondary">Import Workflow</button>
+          <input id="import-file" type="file" accept="application/json" class="hidden" />
+        </div>
+      </div>
+      <div id="workflow-cards" class="grid cards"></div>
+      <div id="workflow-detail" class="banner hidden"></div>
+    </section>
+
+    <section id="pipelines" class="panel hidden">
+      <div class="section-title">
+        <h2>Pipelines</h2>
+        <div class="row">
+          <button id="add-pipeline">New Pipeline</button>
+        </div>
+      </div>
+      <div id="pipeline-builder" class="panel"></div>
+      <div id="pipeline-list" class="grid"></div>
+    </section>
+
+    <section id="gallery" class="panel hidden">
+      <div class="section-title">
+        <h2>Gallery</h2>
+        <div class="row">
+          <select id="gallery-filter"></select>
+          <button id="refresh-gallery" class="secondary">Refresh</button>
+        </div>
+      </div>
+      <div id="gallery-list" class="gallery-grid"></div>
+    </section>
+  </main>
+
+  <div id="preview-modal" class="modal">
+    <div class="modal-card">
+      <div class="modal-media" id="modal-media"></div>
+      <div class="modal-sidebar" id="modal-meta"></div>
+    </div>
+  </div>
+
+  <template id="server-form">
+    <div class="panel">
+      <div class="row">
+        <label>Name
+          <input name="name" />
+        </label>
+        <label>URL
+          <input name="url" />
+        </label>
+      </div>
+      <div class="row">
+        <label>API Key
+          <input name="apiKey" />
+        </label>
+        <label>Default
+          <select name="isDefault">
+            <option value="false">No</option>
+            <option value="true">Yes</option>
+          </select>
+        </label>
+      </div>
+      <div class="row">
+        <button class="save">Save</button>
+        <button class="secondary cancel">Cancel</button>
+      </div>
+    </div>
+  </template>
+
+  <template id="workflow-form">
+    <div class="panel">
+      <div class="row">
+        <label>Title
+          <input name="title" />
+        </label>
+        <label>Emoji
+          <input name="emoji" />
+        </label>
+      </div>
+      <label>Description
+        <textarea name="description"></textarea>
+      </label>
+      <label>Server
+        <select name="serverRef"></select>
+      </label>
+      <div class="row">
+        <button class="save">Save</button>
+        <button class="secondary cancel">Cancel</button>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    const api = {
+      async get(path) {
+        const res = await fetch(path);
+        return res.json();
+      },
+      async post(path, payload) {
+        const res = await fetch(path, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload || {})
+        });
+        return res.json();
+      },
+      async put(path, payload) {
+        const res = await fetch(path, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload || {})
+        });
+        return res.json();
+      },
+      async del(path) {
+        const res = await fetch(path, { method: 'DELETE' });
+        return res.json();
+      }
+    };
+
+    const state = {
+      servers: [],
+      workflows: [],
+      templates: [],
+      pipelines: [],
+      gallery: [],
+      activeWorkflow: null,
+      lastStatus: {}
+    };
+
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach(tab => tab.addEventListener('click', () => switchTab(tab.dataset.tab)));
+
+    function switchTab(id) {
+      tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === id));
+      document.getElementById('servers').classList.toggle('hidden', id !== 'servers');
+      document.getElementById('workflows').classList.toggle('hidden', id !== 'workflows');
+      document.getElementById('pipelines').classList.toggle('hidden', id !== 'pipelines');
+      document.getElementById('gallery').classList.toggle('hidden', id !== 'gallery');
+      if (id === 'gallery') {
+        refreshGallery();
+      }
+      if (id === 'pipelines') {
+        renderPipelines();
+      }
+    }
+
+    async function load() {
+      state.servers = await api.get('/api/servers');
+      state.workflows = await api.get('/api/workflows');
+      state.templates = await api.get('/api/templates');
+      state.pipelines = await api.get('/api/pipelines');
+      renderServers();
+      renderWorkflows();
+      populateGalleryFilter();
+      renderPipelines();
+    }
+
+    function renderServers() {
+      const container = document.getElementById('servers-list');
+      container.innerHTML = '';
+      state.servers.forEach(server => {
+        const card = document.createElement('div');
+        card.className = 'panel';
+        const status = state.lastStatus[server.id];
+        card.innerHTML = `
+          <div class="row" style="justify-content:space-between;align-items:center;">
+            <div>
+              <strong>${server.name}</strong>
+              <div class="muted">${server.url}</div>
+            </div>
+            <div>
+              <span class="status-dot ${status === true ? 'ok' : status === false ? 'fail' : ''}"></span>
+              <span class="muted">${server.isDefault ? 'Default' : ''}</span>
+            </div>
+          </div>
+          <div class="row" style="margin-top:12px;">
+            <button data-action="test">Test</button>
+            <button class="secondary" data-action="edit">Edit</button>
+            <button class="danger" data-action="delete">Delete</button>
+          </div>
+        `;
+        card.querySelector('[data-action="test"]').onclick = async () => {
+          const res = await api.post(`/api/servers/${server.id}/test`);
+          state.lastStatus[server.id] = !!res.ok;
+          renderServers();
+        };
+        card.querySelector('[data-action="edit"]').onclick = () => openServerForm(server);
+        card.querySelector('[data-action="delete"]').onclick = async () => {
+          if (!confirm('Delete server?')) return;
+          await api.del(`/api/servers/${server.id}`);
+          await load();
+        };
+        container.appendChild(card);
+      });
+    }
+
+    function openServerForm(server) {
+      const template = document.getElementById('server-form');
+      const form = template.content.cloneNode(true);
+      const panel = form.querySelector('.panel');
+      const name = panel.querySelector('[name=name]');
+      const url = panel.querySelector('[name=url]');
+      const apiKey = panel.querySelector('[name=apiKey]');
+      const isDefault = panel.querySelector('[name=isDefault]');
+      if (server) {
+        name.value = server.name;
+        url.value = server.url;
+        apiKey.value = server.apiKey || '';
+        isDefault.value = String(!!server.isDefault);
+      }
+      panel.querySelector('.save').onclick = async () => {
+        const payload = {
+          name: name.value,
+          url: url.value,
+          apiKey: apiKey.value,
+          isDefault: isDefault.value === 'true'
+        };
+        if (server) {
+          await api.put(`/api/servers/${server.id}`, payload);
+        } else {
+          await api.post('/api/servers', payload);
+        }
+        await load();
+      };
+      panel.querySelector('.cancel').onclick = () => load();
+      const container = document.getElementById('servers-list');
+      container.innerHTML = '';
+      container.appendChild(panel);
+    }
+
+    function renderWorkflows() {
+      const container = document.getElementById('workflow-cards');
+      container.innerHTML = '';
+      state.workflows.forEach(workflow => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <h3>${workflow.emoji || '🧩'} ${workflow.title}</h3>
+          <div class="muted">${workflow.description || ''}</div>
+        `;
+        card.onclick = () => openWorkflowDetail(workflow);
+        container.appendChild(card);
+      });
+    }
+
+    function openWorkflowDetail(workflow) {
+      state.activeWorkflow = workflow;
+      const detail = document.getElementById('workflow-detail');
+      detail.classList.remove('hidden');
+      detail.innerHTML = '';
+      const serverOptions = state.servers.map(s => `<option value="${s.id}" ${s.id === workflow.serverRef ? 'selected' : ''}>${s.name}</option>`).join('');
+      const primaryInputs = renderNodeList(workflow.primaryInputNodes, true);
+      const secondaryInputs = renderNodeList(workflow.secondaryInputNodes, false);
+      const outputs = renderNodeList(workflow.primaryOutputNodes || [], false, true);
+      detail.innerHTML = `
+        <div class="row" style="justify-content:space-between;align-items:center;">
+          <div>
+            <h3>${workflow.emoji || '🧩'} ${workflow.title}</h3>
+            <div class="muted">${workflow.description || ''}</div>
+          </div>
+          <div class="row">
+            <button class="secondary" id="close-detail">Close</button>
+            <button class="danger" id="delete-workflow">Delete</button>
+          </div>
+        </div>
+        <div class="workflow-tabs">
+          <button class="workflow-tab active" data-view="setup">Setup</button>
+          <button class="workflow-tab" data-view="run">Run</button>
+          <button class="workflow-tab" data-view="gallery">Gallery</button>
+        </div>
+        <div id="workflow-view-setup">
+          <div class="row" style="margin-top:12px;">
+            <label>Title
+              <input id="wf-title" value="${workflow.title}" />
+            </label>
+            <label>Emoji
+              <input id="wf-emoji" value="${workflow.emoji || ''}" />
+            </label>
+          </div>
+          <label>Description
+            <textarea id="wf-desc">${workflow.description || ''}</textarea>
+          </label>
+          <label>Server
+            <select id="wf-server">${serverOptions}</select>
+          </label>
+          <div class="workflow-detail">
+            <div>
+              <div class="section-title">
+                <strong>Primary Inputs</strong>
+              </div>
+              <div class="node-list" id="primary-inputs">${primaryInputs}</div>
+            </div>
+            <div>
+              <details>
+                <summary><strong>Secondary Inputs</strong></summary>
+                <div class="node-list" id="secondary-inputs">${secondaryInputs}</div>
+              </details>
+            </div>
+          </div>
+          <div class="output-list">
+            <strong>Primary Outputs</strong>
+            ${outputs}
+          </div>
+          <div class="row" style="margin-top:12px;">
+            <button id="save-workflow">Save</button>
+          </div>
+        </div>
+        <div id="workflow-view-run" class="hidden">
+          <div class="run-panel">
+            <div id="run-templates"></div>
+            <div id="run-inputs"></div>
+            <div class="row" style="justify-content:space-between;">
+              <button id="save-template" class="secondary">Save as Template</button>
+              <div class="row">
+                <button id="batch-workflow" class="secondary">Batch</button>
+                <button id="run-workflow">Generate</button>
+              </div>
+            </div>
+            <div id="batch-panel" class="panel hidden" style="margin-top:10px;">
+              <div class="muted" style="margin-bottom:6px;">Batch settings</div>
+              <div class="row" style="align-items:center;gap:12px;">
+                <label style="flex:1;">Count
+                  <input id="batch-count" type="range" min="2" max="10" value="3" />
+                </label>
+                <div id="batch-count-display" class="status-pill">3</div>
+                <label class="row" style="gap:6px;align-items:center;">
+                  <input id="batch-vary-seed" type="checkbox" checked />
+                  <span>Vary Seed</span>
+                </label>
+                <button id="run-batch">Run Batch</button>
+              </div>
+              <div id="batch-progress" class="muted" style="margin-top:8px;"></div>
+            </div>
+            <div id="run-status" class="muted"></div>
+            <div id="run-output"></div>
+          </div>
+        </div>
+        <div id="workflow-view-gallery" class="hidden">
+          <div id="workflow-gallery" class="gallery-grid"></div>
+        </div>
+      `;
+
+      detail.querySelectorAll('.workflow-tab').forEach(tab => {
+        tab.onclick = () => switchWorkflowView(detail, tab.dataset.view);
+      });
+
+      detail.querySelector('#close-detail').onclick = () => {
+        detail.classList.add('hidden');
+      };
+      detail.querySelector('#delete-workflow').onclick = async () => {
+        if (!confirm('Delete workflow?')) return;
+        await api.del(`/api/workflows/${workflow.id}`);
+        detail.classList.add('hidden');
+        await load();
+      };
+      detail.querySelector('#save-workflow').onclick = async () => {
+        workflow.title = detail.querySelector('#wf-title').value;
+        workflow.emoji = detail.querySelector('#wf-emoji').value;
+        workflow.description = detail.querySelector('#wf-desc').value;
+        workflow.serverRef = detail.querySelector('#wf-server').value;
+        await api.put(`/api/workflows/${workflow.id}`, workflow);
+        await load();
+        openWorkflowDetail(workflow);
+      };
+
+      bindNodeButtons(detail, workflow);
+      renderRunInputs(detail, workflow);
+      loadWorkflowGallery(workflow.id);
+    }
+
+    function switchWorkflowView(detail, view) {
+      detail.querySelectorAll('.workflow-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.view === view);
+      });
+      detail.querySelector('#workflow-view-setup').classList.toggle('hidden', view !== 'setup');
+      detail.querySelector('#workflow-view-run').classList.toggle('hidden', view !== 'run');
+      detail.querySelector('#workflow-view-gallery').classList.toggle('hidden', view !== 'gallery');
+    }
+
+    function renderNodeList(nodes, allowPromote, readOnly = false) {
+      if (!nodes || !nodes.length) return '<div class="muted">No nodes</div>';
+      return nodes.map(node => {
+        const value = node.currentValue ?? '';
+        const inputField = readOnly ? '' : `<input data-node="${node.nodeId}" data-field="${node.fieldPath}" value="${value}" />`;
+        const btn = allowPromote
+          ? `<button class="secondary" data-action="demote" data-node="${node.nodeId}">Secondary</button>`
+          : `<button class="secondary" data-action="promote" data-node="${node.nodeId}">Primary</button>`;
+        return `
+          <div class="node-item">
+            <div><strong>${node.label}</strong> <span class="pill">${node.description}</span></div>
+            ${readOnly ? '' : `<div class="row" style="margin-top:6px;">${inputField}</div>`}
+            ${readOnly ? '' : `<div class="row" style="margin-top:6px;">${btn}</div>`}
+          </div>
+        `;
+      }).join('');
+    }
+
+    const ASPECT_RATIOS = [
+      '1:1',
+      'landscape (5:4)', 'landscape (4:3)', 'landscape (3:2)',
+      'landscape (16:10)', 'landscape (16:9)', 'landscape (21:9)',
+      'portrait (4:5)', 'portrait (3:4)', 'portrait (2:3)',
+      'portrait (9:10)', 'portrait (9:16)', 'portrait (9:21)'
+    ];
+
+    function isImageField(node) {
+      const f = (node.fieldPath || '').toLowerCase();
+      const l = (node.label || '').toLowerCase();
+      return (f === 'image' || f === 'inputs.image' || l === 'image') && node.description !== 'aspect_ratio';
+    }
+
+    function isAudioField(node) {
+      const f = (node.fieldPath || '').toLowerCase();
+      const l = (node.label || '').toLowerCase();
+      return f === 'audio' || f === 'inputs.audio' || l === 'audio' || l.includes('audio');
+    }
+
+    function isAspectRatioField(node) {
+      const f = (node.fieldPath || '').toLowerCase();
+      const l = (node.label || '').toLowerCase();
+      return f.includes('aspect_ratio') || l.includes('aspect ratio');
+    }
+
+    function isResolutionField(node) {
+      const f = (node.fieldPath || '').toLowerCase();
+      const l = (node.label || '').toLowerCase();
+      return f.includes('base_resolution') || l.includes('resolution');
+    }
+
+    function renderRunInputs(detail, workflow) {
+      renderTemplateControls(detail, workflow);
+      const container = detail.querySelector('#run-inputs');
+      container.innerHTML = '';
+      const inputs = workflow.primaryInputNodes || [];
+      if (!inputs.length) {
+        container.innerHTML = '<div class="muted">No primary inputs configured.</div>';
+        return;
+      }
+      inputs.forEach(node => {
+        const wrap = document.createElement('div');
+        wrap.className = 'panel';
+        const fieldId = `${node.nodeId}.${node.fieldPath}`;
+
+        if (isImageField(node)) {
+          // File upload for image inputs
+          wrap.innerHTML = `
+            <div class="muted">${fieldId}</div>
+            <div class="row" style="align-items:center;gap:8px;">
+              <input type="file" accept="image/*" data-node="${node.nodeId}" data-field="${node.fieldPath}" data-upload="true" data-subfolder="" style="flex:1;" />
+              <span class="muted upload-status" data-for="${node.nodeId}"></span>
+            </div>
+            <input type="hidden" data-node="${node.nodeId}" data-field="${node.fieldPath}" data-hidden="true" value="${node.currentValue ?? ''}" />
+            ${node.currentValue ? `<div class="muted" style="margin-top:4px;">Current: ${node.currentValue}</div>` : ''}
+          `;
+        } else if (isAudioField(node)) {
+          // File upload for audio inputs (uploads to ComfyUI audio subfolder)
+          wrap.innerHTML = `
+            <div class="muted">${fieldId}</div>
+            <div class="row" style="align-items:center;gap:8px;">
+              <input type="file" accept="audio/*" data-node="${node.nodeId}" data-field="${node.fieldPath}" data-upload="true" data-subfolder="audio" style="flex:1;" />
+              <span class="muted upload-status" data-for="${node.nodeId}"></span>
+            </div>
+            <input type="hidden" data-node="${node.nodeId}" data-field="${node.fieldPath}" data-hidden="true" value="${node.currentValue ?? ''}" />
+            ${node.currentValue ? `<div class="muted" style="margin-top:4px;">Current: ${node.currentValue}</div>` : ''}
+          `;
+        } else if (isAspectRatioField(node)) {
+          // Dropdown for aspect ratio
+          const options = ASPECT_RATIOS.map(ar => {
+            const sel = (node.currentValue || '').replace('square ', '').trim() === ar || node.currentValue === ar ? 'selected' : '';
+            return `<option value="${ar}" ${sel}>${ar}</option>`;
+          }).join('');
+          wrap.innerHTML = `
+            <div class="muted">${fieldId}</div>
+            <select data-node="${node.nodeId}" data-field="${node.fieldPath}">${options}</select>
+          `;
+        } else if (isResolutionField(node)) {
+          // Stepper for base resolution (multiples of 128, min 512)
+          const curVal = parseInt(node.currentValue) || 512;
+          wrap.innerHTML = `
+            <div class="muted">${fieldId}</div>
+            <div class="row" style="align-items:center;gap:0;">
+              <button class="secondary res-down" style="border-radius:12px 0 0 12px;padding:10px 14px;font-size:18px;">◀</button>
+              <input type="number" data-node="${node.nodeId}" data-field="${node.fieldPath}" value="${curVal}" step="128" min="512" max="2048" style="border-radius:0;text-align:center;width:100px;-moz-appearance:textfield;" />
+              <button class="secondary res-up" style="border-radius:0 12px 12px 0;padding:10px 14px;font-size:18px;">▶</button>
+            </div>
+          `;
+        } else if (Array.isArray(node.options)) {
+          const options = node.options.map(opt => `<option value="${opt}" ${opt == node.currentValue ? 'selected' : ''}>${opt}</option>`).join('');
+          wrap.innerHTML = `
+            <div class="muted">${fieldId}</div>
+            <select data-node="${node.nodeId}" data-field="${node.fieldPath}">${options}</select>
+          `;
+        } else if (node.type === 'int' || node.type === 'float' || node.type === 'number') {
+          wrap.innerHTML = `
+            <div class="muted">${fieldId}</div>
+            <input type="number" data-node="${node.nodeId}" data-field="${node.fieldPath}" value="${node.currentValue ?? ''}" />
+          `;
+        } else {
+          wrap.innerHTML = `
+            <div class="muted">${fieldId}</div>
+            <input type="text" data-node="${node.nodeId}" data-field="${node.fieldPath}" value="${node.currentValue ?? ''}" />
+          `;
+        }
+        container.appendChild(wrap);
+      });
+
+      // Resolution stepper buttons
+      container.querySelectorAll('.res-down').forEach(btn => {
+        btn.onclick = () => {
+          const input = btn.parentElement.querySelector('input[type=number]');
+          let val = parseInt(input.value) || 512;
+          val = Math.max(512, val - 128);
+          input.value = val;
+          input.dispatchEvent(new Event('change'));
+        };
+      });
+      container.querySelectorAll('.res-up').forEach(btn => {
+        btn.onclick = () => {
+          const input = btn.parentElement.querySelector('input[type=number]');
+          let val = parseInt(input.value) || 512;
+          val = Math.min(2048, val + 128);
+          input.value = val;
+          input.dispatchEvent(new Event('change'));
+        };
+      });
+
+      // Image upload handlers
+      container.querySelectorAll('input[data-upload="true"]').forEach(fileInput => {
+        fileInput.onchange = async () => {
+          const file = fileInput.files[0];
+          if (!file) return;
+          const nodeId = fileInput.dataset.node;
+          const field = fileInput.dataset.field;
+          const statusEl = container.querySelector(`.upload-status[data-for="${nodeId}"]`);
+          const hiddenInput = container.querySelector(`input[data-hidden="true"][data-node="${nodeId}"]`);
+          statusEl.textContent = 'Uploading...';
+          // Find the server for this workflow
+          const server = state.servers.find(s => s.id === workflow.serverRef);
+          if (!server) {
+            statusEl.textContent = 'No server!';
+            return;
+          }
+          const subfolder = fileInput.dataset.subfolder || '';
+          const formData = new FormData();
+          formData.append('image', file);
+          formData.append('type', 'input');
+          if (subfolder) formData.append('subfolder', subfolder);
+          try {
+            const res = await fetch(`/api/servers/${server.id}/upload`, {
+              method: 'POST',
+              body: formData
+            });
+            const result = await res.json();
+            if (result.name) {
+              const resultSub = result.subfolder || subfolder;
+              const filename = resultSub ? `${resultSub}/${result.name}` : result.name;
+              hiddenInput.value = filename;
+              statusEl.textContent = `✓ ${result.name}`;
+              statusEl.style.color = 'var(--success)';
+              const node = (workflow.primaryInputNodes || []).find(n => n.nodeId === nodeId && n.fieldPath === field);
+              if (node) node.currentValue = filename;
+            } else {
+              statusEl.textContent = 'Upload failed';
+              statusEl.style.color = 'var(--danger)';
+            }
+          } catch (err) {
+            statusEl.textContent = 'Upload error';
+            statusEl.style.color = 'var(--danger)';
+          }
+        };
+      });
+
+      // Standard change handlers for non-upload inputs
+      container.querySelectorAll('input[data-node]:not([data-upload]):not([data-hidden]), select[data-node]').forEach(input => {
+        input.onchange = () => {
+          const nodeId = input.dataset.node;
+          const field = input.dataset.field;
+          const val = input.value;
+          const node = (workflow.primaryInputNodes || []).find(n => n.nodeId === nodeId && n.fieldPath === field);
+          if (node) {
+            node.currentValue = val;
+          }
+        };
+      });
+
+      detail.querySelector('#run-workflow').onclick = async () => runWorkflow(workflow, detail);
+      detail.querySelector('#batch-workflow').onclick = async () => toggleBatchPanel(detail);
+      detail.querySelector('#save-template').onclick = async () => saveTemplate(detail, workflow);
+      setupBatchPanel(detail, workflow);
+    }
+
+    function bindNodeButtons(detail, workflow) {
+      detail.querySelectorAll('[data-action="promote"]').forEach(btn => {
+        btn.onclick = async () => {
+          const nodeId = btn.dataset.node;
+          const idx = workflow.secondaryInputNodes.findIndex(n => n.nodeId === nodeId);
+          if (idx >= 0) {
+            const node = workflow.secondaryInputNodes.splice(idx, 1)[0];
+            workflow.primaryInputNodes.push(node);
+            await api.put(`/api/workflows/${workflow.id}`, workflow);
+            openWorkflowDetail(workflow);
+          }
+        };
+      });
+      detail.querySelectorAll('[data-action="demote"]').forEach(btn => {
+        btn.onclick = async () => {
+          const nodeId = btn.dataset.node;
+          const idx = workflow.primaryInputNodes.findIndex(n => n.nodeId === nodeId);
+          if (idx >= 0) {
+            const node = workflow.primaryInputNodes.splice(idx, 1)[0];
+            workflow.secondaryInputNodes.push(node);
+            await api.put(`/api/workflows/${workflow.id}`, workflow);
+            openWorkflowDetail(workflow);
+          }
+        };
+      });
+      detail.querySelectorAll('input[data-node]').forEach(input => {
+        input.onchange = () => {
+          const nodeId = input.dataset.node;
+          const field = input.dataset.field;
+          const val = input.value;
+          const list = workflow.primaryInputNodes.concat(workflow.secondaryInputNodes);
+          const node = list.find(n => n.nodeId === nodeId && n.fieldPath === field);
+          if (node) {
+            node.currentValue = val;
+          }
+        };
+      });
+    }
+
+    function renderTemplateControls(detail, workflow) {
+      const container = detail.querySelector('#run-templates');
+      if (!container) return;
+      const templates = state.templates.filter(t => !t.workflowId || t.workflowId === workflow.id);
+      const options = templates.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+      container.innerHTML = `
+        <div class="panel">
+          <div class="row" style="align-items:center;justify-content:space-between;">
+            <div style="flex:1;">
+              <div class="muted" style="margin-bottom:4px;">Templates</div>
+              <select id="template-select">
+                <option value="">Select template</option>
+                ${options}
+              </select>
+            </div>
+            <button id="delete-template" class="danger">Delete</button>
+          </div>
+        </div>
+      `;
+      const select = container.querySelector('#template-select');
+      const deleteBtn = container.querySelector('#delete-template');
+      select.onchange = () => {
+        const templateId = select.value;
+        if (!templateId) return;
+        const template = templates.find(t => t.id === templateId);
+        if (!template) return;
+        applyTemplate(detail, workflow, template);
+      };
+      deleteBtn.onclick = async () => {
+        const templateId = select.value;
+        if (!templateId) return;
+        if (!confirm('Delete template?')) return;
+        await api.del(`/api/templates/${templateId}`);
+        state.templates = await api.get('/api/templates');
+        renderTemplateControls(detail, workflow);
+      };
+    }
+
+    function applyTemplate(detail, workflow, template) {
+      const inputs = template.inputs || {};
+      const runInputs = detail.querySelector('#run-inputs');
+      Object.entries(inputs).forEach(([key, value]) => {
+        if (!key.includes('.')) return;
+        const [nodeId, field] = key.split('.', 2);
+        let input = runInputs.querySelector(`input[data-hidden="true"][data-node="${nodeId}"][data-field="${field}"]`);
+        if (!input) input = runInputs.querySelector(`[data-node="${nodeId}"][data-field="${field}"]`);
+        if (!input) return;
+        input.value = value;
+        input.dispatchEvent(new Event('change'));
+      });
+      (workflow.primaryInputNodes || []).forEach(node => {
+        const key = `${node.nodeId}.${node.fieldPath}`;
+        if (key in inputs) {
+          node.currentValue = inputs[key];
+        }
+      });
+    }
+
+    async function saveTemplate(detail, workflow) {
+      const name = prompt('Template name');
+      if (!name) return;
+      const inputs = {};
+      const runInputs = detail.querySelector('#run-inputs');
+      (workflow.primaryInputNodes || []).forEach(node => {
+        let el = runInputs.querySelector(`input[data-hidden="true"][data-node="${node.nodeId}"][data-field="${node.fieldPath}"]`);
+        if (!el) el = runInputs.querySelector(`[data-node="${node.nodeId}"][data-field="${node.fieldPath}"]`);
+        if (el) inputs[`${node.nodeId}.${node.fieldPath}`] = el.value;
+      });
+      const payload = { name, workflowId: workflow.id, inputs };
+      await api.post('/api/templates', payload);
+      state.templates = await api.get('/api/templates');
+      renderTemplateControls(detail, workflow);
+    }
+
+    function getRunInputs(workflow, detail) {
+      const runInputs = detail.querySelector('#run-inputs');
+      return (workflow.primaryInputNodes || []).map(node => {
+        let el = runInputs.querySelector(`input[data-hidden="true"][data-node="${node.nodeId}"][data-field="${node.fieldPath}"]`);
+        if (!el) el = runInputs.querySelector(`[data-node="${node.nodeId}"][data-field="${node.fieldPath}"]:not([data-upload])`);
+        let val = el ? el.value : node.currentValue;
+        if (node.type === 'int') val = parseInt(val, 10) || 0;
+        else if (node.type === 'float' || node.type === 'number') val = parseFloat(val) || 0;
+        return { ...node, currentValue: val };
+      });
+    }
+
+    async function runWorkflow(workflow, detail) {
+      const status = detail.querySelector('#run-status');
+      const outputContainer = detail.querySelector('#run-output');
+      status.innerHTML = '<span class="status-pulse">Queued...</span>';
+      outputContainer.innerHTML = '';
+      const updatedNodes = getRunInputs(workflow, detail);
+      const res = await api.post(`/api/workflows/${workflow.id}/run`, {
+        inputs: updatedNodes,
+        primaryInputs: updatedNodes,
+        secondaryInputs: workflow.secondaryInputNodes || []
+      });
+      if (!res.prompt_id) {
+        status.innerHTML = '<span class="status-pulse" style="--status-color: var(--danger);">Failed to queue workflow.</span>';
+        return;
+      }
+      status.innerHTML = `<span class="status-pulse">Queued: ${res.prompt_id}</span>`;
+      const promptId = res.prompt_id;
+      let attempts = 0;
+      const timer = setInterval(async () => {
+        attempts++;
+        const history = await api.get(`/api/workflows/${workflow.id}/status/${promptId}`);
+        if (history && history.status === 'complete' && history.output) {
+          clearInterval(timer);
+          status.innerHTML = '<span class="status-pulse complete">Complete</span>';
+          renderOutputPreview(history.output, outputContainer);
+          await loadWorkflowGallery(workflow.id);
+          await refreshGallery();
+          return;
+        }
+        if (attempts > 30) {
+          status.innerHTML = '<span class="status-pulse">Generating...</span>';
+        }
+      }, 2000);
+    }
+
+    function toggleBatchPanel(detail) {
+      const panel = detail.querySelector('#batch-panel');
+      panel.classList.toggle('hidden');
+    }
+
+    function setupBatchPanel(detail, workflow) {
+      const panel = detail.querySelector('#batch-panel');
+      if (!panel) return;
+      const countInput = panel.querySelector('#batch-count');
+      const countDisplay = panel.querySelector('#batch-count-display');
+      countInput.value = countInput.value || 3;
+      countDisplay.textContent = countInput.value;
+      countInput.oninput = () => {
+        countDisplay.textContent = countInput.value;
+      };
+      panel.querySelector('#batch-vary-seed').checked = true;
+      panel.querySelector('#batch-progress').textContent = '';
+      const runButton = panel.querySelector('#run-batch');
+      if (runButton) {
+        runButton.onclick = async () => runBatch(workflow, detail);
+      }
+    }
+
+    async function runBatch(workflow, detail) {
+      const panel = detail.querySelector('#batch-panel');
+      const progress = panel.querySelector('#batch-progress');
+      const count = parseInt(panel.querySelector('#batch-count').value || '3', 10);
+      const varySeed = panel.querySelector('#batch-vary-seed').checked;
+      progress.textContent = 'Queueing batch...';
+      const updatedNodes = getRunInputs(workflow, detail);
+      const inputs = {};
+      updatedNodes.forEach(node => {
+        inputs[`${node.nodeId}.${node.fieldPath}`] = node.currentValue;
+      });
+      const res = await api.post('/api/batch', {
+        workflowId: workflow.id,
+        inputs,
+        variations: count,
+        varySeed
+      });
+      if (!res.batchId) {
+        progress.textContent = 'Failed to start batch.';
+        return;
+      }
+      const batchId = res.batchId;
+      let attempts = 0;
+      const timer = setInterval(async () => {
+        attempts++;
+        const status = await api.get(`/api/batch/${batchId}`);
+        if (status && Array.isArray(status.runs)) {
+          const done = status.runs.filter(r => r.status === 'complete').length;
+          progress.textContent = `Running ${done}/${status.runs.length}...`;
+          if (status.status === 'complete') {
+            clearInterval(timer);
+            progress.textContent = `Complete (${done}/${status.runs.length})`;
+            await loadWorkflowGallery(workflow.id);
+            await refreshGallery();
+          }
+        }
+        if (attempts > 120) {
+          progress.textContent = 'Running...';
+        }
+      }, 2000);
+    }
+
+    function renderOutputPreview(output, container) {
+      container.innerHTML = '';
+      if (!output || !output.outputPath) return;
+      const mediaUrl = `/api/outputs/${encodeURIComponent(output.outputPath)}`;
+      if (output.outputType.startsWith('image')) {
+        container.innerHTML = `<div class="gallery-thumb"><img src="${mediaUrl}" alt="output" /></div>`;
+      } else if (output.outputType.startsWith('video')) {
+        container.innerHTML = `<video controls src="${mediaUrl}"></video>`;
+      } else if (output.outputType.startsWith('audio')) {
+        container.innerHTML = `<audio controls src="${mediaUrl}"></audio>`;
+      }
+      const dl = document.createElement('a');
+      dl.href = mediaUrl;
+      dl.textContent = 'Download output';
+      dl.download = '';
+      dl.style.display = 'inline-block';
+      dl.style.marginTop = '8px';
+      container.appendChild(dl);
+    }
+
+    async function loadWorkflowGallery(workflowId) {
+      const detail = document.getElementById('workflow-detail');
+      const container = detail.querySelector('#workflow-gallery');
+      if (!container) return;
+      const outputs = await api.get(`/api/gallery?workflowId=${workflowId}`);
+      container.innerHTML = '';
+      if (!outputs.length) {
+        container.innerHTML = '<div class="muted">No outputs yet.</div>';
+        return;
+      }
+      outputs.forEach(output => {
+        container.appendChild(buildGalleryCard(output, false));
+      });
+    }
+
+    function populateGalleryFilter() {
+      const filter = document.getElementById('gallery-filter');
+      filter.innerHTML = '<option value="">All workflows</option>';
+      state.workflows.forEach(wf => {
+        const opt = document.createElement('option');
+        opt.value = wf.id;
+        opt.textContent = `${wf.emoji || '🧩'} ${wf.title}`;
+        filter.appendChild(opt);
+      });
+    }
+
+    async function refreshGallery() {
+      const filter = document.getElementById('gallery-filter');
+      const workflowId = filter.value;
+      const url = workflowId ? `/api/gallery?workflowId=${workflowId}` : '/api/gallery';
+      const outputs = await api.get(url);
+      const container = document.getElementById('gallery-list');
+      container.innerHTML = '';
+      if (!outputs.length) {
+        container.innerHTML = '<div class="muted">No outputs yet.</div>';
+        return;
+      }
+      outputs.forEach(output => {
+        container.appendChild(buildGalleryCard(output, true));
+      });
+    }
+
+    function buildGalleryCard(output, showWorkflow) {
+      const card = document.createElement('div');
+      card.className = 'gallery-card';
+      const mediaUrl = output.outputPath ? `/api/outputs/${encodeURIComponent(output.outputPath)}` : '';
+      let mediaHtml = '<div class="muted">No preview</div>';
+      if (mediaUrl) {
+        if (output.outputType.startsWith('image')) {
+          mediaHtml = `<img src="${mediaUrl}" alt="output" />`;
+        } else if (output.outputType.startsWith('video')) {
+          mediaHtml = `<video src="${mediaUrl}"></video>`;
+        } else if (output.outputType.startsWith('audio')) {
+          mediaHtml = `<div class="muted">Audio</div>`;
+        }
+      }
+      const inputs = Object.entries(output.inputValues || {}).map(([key, val]) => `<div><span class="muted">${key}</span>: ${val}</div>`).join('');
+      const batchTag = output.batchId ? `<div class="tag">Batch ${output.variationIndex || ''}/${output.batchCount || ''}</div>` : '';
+      const pipelineTag = output.pipelineId ? `<div class="tag">Pipeline ${output.stepIndex || ''}/${output.stepCount || ''}</div>` : '';
+      card.innerHTML = `
+        <div class="gallery-thumb">${mediaHtml}</div>
+        <div class="gallery-meta">${new Date(output.timestamp).toLocaleString()}</div>
+        ${showWorkflow ? `<div class="tag">${output.workflowTitle || 'Workflow'}</div>` : ''}
+        ${batchTag}
+        ${pipelineTag}
+        <div class="gallery-meta">${inputs || '—'}</div>
+        <div class="row">
+          <button class="secondary" data-action="download">Download</button>
+          <button class="danger" data-action="delete">Delete</button>
+        </div>
+      `;
+      const thumb = card.querySelector('.gallery-thumb');
+      thumb.onclick = () => openModal(output);
+      card.querySelector('[data-action="download"]').onclick = () => {
+        if (!mediaUrl) return;
+        const link = document.createElement('a');
+        link.href = mediaUrl;
+        link.download = '';
+        link.click();
+      };
+      card.querySelector('[data-action="delete"]').onclick = async () => {
+        if (!confirm('Delete output?')) return;
+        await api.del(`/api/gallery/${output.id}`);
+        await refreshGallery();
+        if (state.activeWorkflow) {
+          await loadWorkflowGallery(state.activeWorkflow.id);
+        }
+      };
+      return card;
+    }
+
+    function openModal(output) {
+      const modal = document.getElementById('preview-modal');
+      const media = document.getElementById('modal-media');
+      const meta = document.getElementById('modal-meta');
+      const mediaUrl = output.outputPath ? `/api/outputs/${encodeURIComponent(output.outputPath)}` : '';
+      media.innerHTML = '';
+      if (output.outputType.startsWith('image')) {
+        media.innerHTML = `<img src="${mediaUrl}" alt="output" />`;
+      } else if (output.outputType.startsWith('video')) {
+        media.innerHTML = `<video controls src="${mediaUrl}"></video>`;
+      } else if (output.outputType.startsWith('audio')) {
+        media.innerHTML = `<audio controls src="${mediaUrl}"></audio>`;
+      }
+      const inputs = Object.entries(output.inputValues || {}).map(([key, val]) => `<div><strong>${key}</strong>: ${val}</div>`).join('');
+      const batchLine = output.batchId ? `<div class="status-pill">Batch ${output.variationIndex || ''}/${output.batchCount || ''}</div>` : '';
+      meta.innerHTML = `
+        <div><strong>${output.workflowTitle || 'Workflow'}</strong></div>
+        <div class="muted">${new Date(output.timestamp).toLocaleString()}</div>
+        <div class="status-pill">🟢 ${output.status || 'complete'}</div>
+        ${batchLine}
+        <div>${inputs || 'No inputs recorded.'}</div>
+        <div class="row">
+          <button class="secondary" onclick="window.open('${mediaUrl}','_blank')">Open</button>
+          <button onclick="document.getElementById('preview-modal').classList.remove('active')">Close</button>
+        </div>
+      `;
+      modal.classList.add('active');
+    }
+
+    document.getElementById('preview-modal').onclick = (event) => {
+      if (event.target.id === 'preview-modal') {
+        document.getElementById('preview-modal').classList.remove('active');
+      }
+    };
+
+    document.getElementById('add-server').onclick = () => openServerForm();
+    document.getElementById('add-workflow').onclick = () => openWorkflowForm();
+    document.getElementById('add-pipeline').onclick = () => openPipelineBuilder();
+    document.getElementById('refresh-gallery').onclick = () => refreshGallery();
+    document.getElementById('gallery-filter').onchange = () => refreshGallery();
+
+    function openWorkflowForm(workflow) {
+      const template = document.getElementById('workflow-form');
+      const form = template.content.cloneNode(true);
+      const panel = form.querySelector('.panel');
+      const title = panel.querySelector('[name=title]');
+      const emoji = panel.querySelector('[name=emoji]');
+      const description = panel.querySelector('[name=description]');
+      const serverRef = panel.querySelector('[name=serverRef]');
+      serverRef.innerHTML = state.servers.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+      if (workflow) {
+        title.value = workflow.title;
+        emoji.value = workflow.emoji;
+        description.value = workflow.description;
+        serverRef.value = workflow.serverRef;
+      }
+      panel.querySelector('.save').onclick = async () => {
+        const payload = {
+          title: title.value,
+          emoji: emoji.value,
+          description: description.value,
+          serverRef: serverRef.value,
+          workflowJson: workflow ? workflow.workflowJson : {},
+          primaryInputNodes: workflow ? workflow.primaryInputNodes : [],
+          secondaryInputNodes: workflow ? workflow.secondaryInputNodes : [],
+          primaryOutputNodes: workflow ? workflow.primaryOutputNodes : [],
+          secondaryOutputNodes: workflow ? workflow.secondaryOutputNodes : []
+        };
+        if (workflow) {
+          await api.put(`/api/workflows/${workflow.id}`, payload);
+        } else {
+          await api.post('/api/workflows', payload);
+        }
+        await load();
+      };
+      panel.querySelector('.cancel').onclick = () => load();
+      const container = document.getElementById('workflow-cards');
+      container.innerHTML = '';
+      container.appendChild(panel);
+    }
+
+    document.getElementById('import-workflow').onclick = () => {
+      document.getElementById('import-file').click();
+    };
+
+    document.getElementById('import-file').onchange = async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const text = await file.text();
+      const wfJson = JSON.parse(text);
+      const serverRef = state.servers[0]?.id || '';
+      const payload = {
+        workflowJson: wfJson,
+        title: file.name,
+        serverRef
+      };
+      await api.post('/api/workflows/import', payload);
+      await load();
+    };
+
+    function renderPipelines() {
+      const list = document.getElementById('pipeline-list');
+      const builder = document.getElementById('pipeline-builder');
+      if (!list || !builder) return;
+      list.innerHTML = '';
+      builder.innerHTML = '<div class="muted">Select workflows and configure inputs to build a pipeline.</div>';
+      state.pipelines.forEach(pipe => {
+        const card = document.createElement('div');
+        card.className = 'panel';
+        const steps = (pipe.steps || []).map((step, idx) => {
+          return `<div class="muted">${idx + 1}. ${step.workflowId}</div>`;
+        }).join('');
+        card.innerHTML = `
+          <div class="row" style="justify-content:space-between;align-items:center;">
+            <div>
+              <strong>${pipe.name || 'Pipeline'}</strong>
+              <div class="muted">${steps || 'No steps'}</div>
+            </div>
+            <div class="row">
+              <button class="secondary" data-action="run">Run</button>
+              <button class="danger" data-action="delete">Delete</button>
+            </div>
+          </div>
+        `;
+        card.querySelector('[data-action="run"]').onclick = () => runPipeline(pipe);
+        card.querySelector('[data-action="delete"]').onclick = async () => {
+          if (!confirm('Delete pipeline?')) return;
+          await api.del(`/api/pipelines/${pipe.id}`);
+          state.pipelines = await api.get('/api/pipelines');
+          renderPipelines();
+        };
+        list.appendChild(card);
+      });
+    }
+
+    function openPipelineBuilder() {
+      const builder = document.getElementById('pipeline-builder');
+      if (!builder) return;
+      const workflowOptions = state.workflows.map(w => `<option value="${w.id}">${w.title}</option>`).join('');
+      builder.innerHTML = `
+        <div class="panel">
+          <div class="row" style="align-items:center;gap:12px;">
+            <label style="flex:1;">Pipeline name
+              <input id="pipeline-name" placeholder="My pipeline" />
+            </label>
+            <button class="secondary" id="add-step">Add Step</button>
+          </div>
+          <div id="pipeline-steps" class="grid" style="margin-top:12px;"></div>
+          <div class="row" style="margin-top:12px;justify-content:flex-end;">
+            <button id="save-pipeline" class="secondary">Save</button>
+            <button id="run-pipeline">Run Pipeline</button>
+          </div>
+          <div id="pipeline-status" class="muted"></div>
+        </div>
+      `;
+      const stepsContainer = builder.querySelector('#pipeline-steps');
+      const addStep = () => {
+        const stepCard = document.createElement('div');
+        stepCard.className = 'panel';
+        stepCard.innerHTML = `
+          <div class="row" style="align-items:center;gap:12px;">
+            <label style="flex:1;">Workflow
+              <select class="pipeline-workflow">${workflowOptions}</select>
+            </label>
+            <button class="danger" data-action="remove">Remove</button>
+          </div>
+          <label>Inputs (node.field=value, comma-separated)
+            <input class="pipeline-inputs" placeholder="node.field=__prev__" />
+          </label>
+        `;
+        stepCard.querySelector('[data-action="remove"]').onclick = () => stepCard.remove();
+        stepsContainer.appendChild(stepCard);
+      };
+      builder.querySelector('#add-step').onclick = addStep;
+      addStep();
+
+      builder.querySelector('#save-pipeline').onclick = async () => {
+        const name = builder.querySelector('#pipeline-name').value || 'Pipeline';
+        const steps = Array.from(builder.querySelectorAll('.pipeline-workflow')).map((sel, idx) => {
+          const inputsRaw = builder.querySelectorAll('.pipeline-inputs')[idx].value || '';
+          const inputs = {};
+          inputsRaw.split(',').map(s => s.trim()).filter(Boolean).forEach(pair => {
+            const [key, val] = pair.split('=');
+            if (key) inputs[key] = val || '';
+          });
+          return { workflowId: sel.value, inputs };
+        });
+        await api.post('/api/pipelines', { name, steps });
+        state.pipelines = await api.get('/api/pipelines');
+        renderPipelines();
+      };
+
+      builder.querySelector('#run-pipeline').onclick = async () => {
+        const steps = Array.from(builder.querySelectorAll('.pipeline-workflow')).map((sel, idx) => {
+          const inputsRaw = builder.querySelectorAll('.pipeline-inputs')[idx].value || '';
+          const inputs = {};
+          inputsRaw.split(',').map(s => s.trim()).filter(Boolean).forEach(pair => {
+            const [key, val] = pair.split('=');
+            if (key) inputs[key] = val || '';
+          });
+          return { workflowId: sel.value, inputs };
+        });
+        const status = builder.querySelector('#pipeline-status');
+        status.textContent = 'Running...';
+        const res = await api.post('/api/pipelines/run', { steps });
+        if (res.pipelineId) {
+          pollPipeline(res.pipelineId, status);
+        } else {
+          status.textContent = 'Failed to start pipeline.';
+        }
+      };
+    }
+
+    async function runPipeline(pipe) {
+      const builder = document.getElementById('pipeline-builder');
+      if (!builder) return;
+      const status = document.createElement('div');
+      status.className = 'muted';
+      builder.innerHTML = '';
+      builder.appendChild(status);
+      status.textContent = 'Running...';
+      const res = await api.post('/api/pipelines/run', { steps: pipe.steps || [] });
+      if (res.pipelineId) {
+        pollPipeline(res.pipelineId, status);
+      } else {
+        status.textContent = 'Failed to start pipeline.';
+      }
+    }
+
+    function pollPipeline(pipelineId, statusEl) {
+      const timer = setInterval(async () => {
+        const res = await api.get(`/api/pipelines/run/${pipelineId}`);
+        if (res.status === 'complete' || res.status === 'error') {
+          clearInterval(timer);
+          statusEl.textContent = `Pipeline ${res.status}`;
+          await refreshGallery();
+          if (state.activeWorkflow) {
+            await loadWorkflowGallery(state.activeWorkflow.id);
+          }
+          return;
+        }
+        statusEl.textContent = `Running step ${res.currentStep || 0}/${(res.steps || []).length}`;
+      }, 2000);
+    }
+
+    load();
+  </script>
+</body>
+</html>
