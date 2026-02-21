@@ -187,10 +187,11 @@ def _request_raw(url: str, api_key: str = "") -> bytes:
 
 
 def normalize_prompt(workflow_json: Dict[str, Any]) -> Dict[str, Any]:
+    import copy
     if "prompt" in workflow_json and isinstance(workflow_json["prompt"], dict):
-        return workflow_json["prompt"]
+        return copy.deepcopy(workflow_json["prompt"])
     if isinstance(workflow_json, dict):
-        return workflow_json
+        return copy.deepcopy(workflow_json)
     raise ValueError("Unsupported workflow JSON format")
 
 
@@ -363,6 +364,13 @@ class ComfyClawHandler(SimpleHTTPRequestHandler):
                 node_id, field = key.split(".", 1)
                 if node_id in prompt:
                     prompt[node_id].setdefault("inputs", {})[field] = val
+            # Randomize seed if -1/0 to prevent ComfyUI caching identical prompts
+            for _nid, _node in prompt.items():
+                _ni = _node.get("inputs", {})
+                if "seed" in _ni and _ni["seed"] in (-1, 0, "-1", "0"):
+                    _ni["seed"] = random.randint(1, 2**32 - 1)
+                if "noise_seed" in _ni and _ni["noise_seed"] in (-1, 0, "-1", "0"):
+                    _ni["noise_seed"] = random.randint(1, 2**32 - 1)
             try:
                 url = server["url"].rstrip("/") + "/prompt"
                 resp = _request_json("POST", url, server.get("apiKey", ""), {"prompt": prompt})

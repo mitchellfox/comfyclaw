@@ -9,6 +9,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/duotone/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
   <style>
     :root {
       color-scheme: dark;
@@ -41,6 +44,7 @@
     }
     *,*::before,*::after { margin:0; padding:0; box-sizing:border-box }
     body { background:var(--bg); color:var(--text); font-family:var(--font-body); line-height:1.6; min-height:100vh }
+    .ph-duotone { vertical-align:-0.125em; }
 
     header { display:flex; align-items:center; justify-content:space-between; padding:0.75rem 1.5rem; border-bottom:1px solid var(--border); background:#0a0a0fdd; backdrop-filter:blur(12px); position:sticky; top:0; z-index:5 }
     header h1 { font-family:var(--font-mono); font-size:1.05rem; margin:0; letter-spacing:-0.3px; font-weight:700; display:flex; align-items:center; gap:10px }
@@ -50,7 +54,7 @@
     .tab { font-family:var(--font-mono); padding:6px 16px; border-radius:999px; border:1px solid transparent; background:transparent; color:var(--text-dim); cursor:pointer; font-weight:600; font-size:0.8rem; transition:all 0.2s }
     .tab.active { background:var(--cyan); color:#000; box-shadow:0 0 16px rgba(0,229,255,0.3) }
 
-    main { max-width:1000px; margin:0 auto; padding:1.5rem; display:grid; gap:20px }
+    main { max-width:960px; margin:0 auto; padding:2rem 1.5rem 3rem; display:grid; gap:20px }
     .hidden { display:none }
 
     .panel { background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:20px }
@@ -133,13 +137,13 @@
 <body>
 <div id="toast-container"></div>
   <header>
-    <h1>⚡ <span>ComfyClaw</span> Dashboard</h1>
+    <h1><i class="ph-duotone ph-lightning"></i> <span>ComfyClaw</span> Dashboard</h1>
     <div class="tabs">
       <button class="tab active" data-tab="servers">Servers</button>
       <button class="tab" data-tab="workflows">Workflows</button>
       <button class="tab" data-tab="pipelines">Pipelines</button>
       <button class="tab" data-tab="gallery">Gallery</button>
-      <button class="tab" data-tab="network">💰 Network</button>
+      <button class="tab" data-tab="network"><i class="ph-duotone ph-currency-dollar" style="margin-right:0.35rem"></i>Network</button>
     </div>
   </header>
 
@@ -191,7 +195,7 @@
       <!-- State 1: Not registered — show the pitch -->
       <div id="net-pitch">
         <div style="text-align:center;padding:20px 0 10px">
-          <div style="font-size:3em;margin-bottom:12px">💰</div>
+          <div style="font-size:3em;margin-bottom:12px"><i class="ph-duotone ph-currency-dollar"></i></div>
           <h2 style="font-size:24px;margin:0;font-weight:800">Turn Your GPU Into a Business</h2>
           <p style="color:var(--muted);margin:8px 0 0;font-size:15px;max-width:500px;margin-left:auto;margin-right:auto">
             Your workflows get listed on <a href="https://comfyclaw.app" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600">comfyclaw.app</a> — a marketplace where anyone can pay to run them on your GPU. You set the price, we handle the rest.
@@ -200,7 +204,7 @@
 
         <!-- Revenue Calculator -->
         <div class="panel" style="background:var(--surface-2);margin-top:24px;padding:20px">
-          <h3 style="font-size:15px;margin:0 0 16px">📊 Earnings Calculator</h3>
+          <h3 style="font-size:15px;margin:0 0 16px"><i class="ph-duotone ph-chart-bar" style="margin-right:0.35rem"></i>Earnings Calculator</h3>
           <div style="display:grid;gap:16px;grid-template-columns:1fr 1fr">
             <div>
               <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">Avg price per run</label>
@@ -268,7 +272,7 @@
 
         <!-- CTA -->
         <div class="panel" style="background:var(--surface-2);margin-top:24px;padding:28px;text-align:center">
-          <h3 style="font-size:18px;margin:0 0 8px">🚀 Ready to Start Earning?</h3>
+          <h3 style="font-size:18px;margin:0 0 8px"><i class="ph-duotone ph-rocket-launch" style="margin-right:0.4rem"></i>Ready to Start Earning?</h3>
           <p style="color:var(--muted);font-size:13px;margin:0 0 20px">Create your account on comfyclaw.app to get set up with secure payments via Stripe.</p>
           <a href="https://comfyclaw.app/provider/signup" target="_blank" class="primary" style="display:inline-block;padding:14px 32px;font-size:16px;font-weight:700;text-decoration:none;border-radius:12px;background:var(--accent);color:var(--bg)">Sign Up on comfyclaw.app →</a>
         </div>
@@ -276,7 +280,7 @@
         <!-- API Key Connection — prominent step -->
         <div class="panel" style="background:var(--surface-2);margin-top:20px;padding:24px">
           <div style="display:flex;align-items:flex-start;gap:14px">
-            <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">🔑</div>
+            <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px"><i class="ph-duotone ph-key"></i></div>
             <div style="flex:1">
               <h3 style="font-size:15px;margin:0 0 4px">Already have an account?</h3>
               <p style="color:var(--muted);font-size:13px;margin:0 0 14px">Paste your API key from <a href="https://comfyclaw.app/account" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600">comfyclaw.app/account</a> to connect this machine to the network.</p>
@@ -292,7 +296,7 @@
       <!-- State 2: Registered — provider dashboard -->
       <div id="net-dashboard" style="display:none">
         <div class="section-title">
-          <h2>💰 Network</h2>
+          <h2><i class="ph-duotone ph-currency-dollar" style="margin-right:0.35rem"></i>Network</h2>
           <div class="row" style="gap:8px;align-items:center">
             <span id="net-status-dot" style="width:10px;height:10px;border-radius:50%;background:#f35d6a;display:inline-block"></span>
             <span id="net-status-text" style="color:var(--muted);font-size:13px">Checking...</span>
@@ -304,11 +308,11 @@
 
         <!-- Payout Method Banner (shown when no Stripe connected) -->
         <div id="net-payout-banner" style="display:none;margin-top:16px">
-          <div class="panel" style="background:linear-gradient(135deg, rgba(0,229,255,0.08), rgba(34,197,94,0.08));border:1px solid var(--accent);padding:20px;border-radius:12px">
+          <div class="panel" style="background:linear-gradient(135deg, rgba(0,229,255,0.04), rgba(34,197,94,0.04));border:1px solid var(--border);padding:20px;border-radius:12px">
             <div style="display:flex;align-items:center;gap:14px">
-              <div style="font-size:1.8em;flex-shrink:0">💳</div>
+              <div style="font-size:1.8em;flex-shrink:0"><i class="ph-duotone ph-credit-card"></i></div>
               <div style="flex:1">
-                <h3 style="font-size:15px;margin:0 0 4px">Connect a Payout Method to Earn Money</h3>
+                <h3 style="font-size:15px;margin:0 0 4px">Start Earning Money</h3>
                 <p style="color:var(--muted);font-size:13px;margin:0">Your workflows are currently shared for free. Connect Stripe to set your own prices and receive payouts to your bank account.</p>
               </div>
               <a href="https://comfyclaw.app/provider" target="_blank" style="background:var(--accent);color:var(--bg);padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap;flex-shrink:0">Set Up Payouts →</a>
@@ -338,13 +342,13 @@
             <div style="display:flex;align-items:center;gap:10px">
               <span id="net-conn-dot" style="width:12px;height:12px;border-radius:50%;background:var(--danger);display:inline-block"></span>
               <div>
-                <h3 style="font-size:14px;margin:0">⚡ GPU Connection</h3>
+                <h3 style="font-size:14px;margin:0"><i class="ph-duotone ph-lightning" style="margin-right:0.35rem"></i>GPU Connection</h3>
                 <span id="net-conn-text" style="color:var(--muted);font-size:12px">Disconnected</span>
               </div>
             </div>
             <div id="net-conn-btns">
-              <button class="primary" id="net-start-btn" onclick="netStartConnect()" style="padding:8px 18px;font-size:13px;font-weight:600">▶ Start</button>
-              <button class="secondary" id="net-stop-btn" onclick="netStopConnect()" style="padding:8px 18px;font-size:13px;display:none;color:var(--danger)">⏹ Stop</button>
+              <button class="primary" id="net-start-btn" onclick="netStartConnect()" style="padding:8px 18px;font-size:13px;font-weight:600"><i class="ph-duotone ph-play" style="margin-right:0.35rem"></i>Start</button>
+              <button class="secondary" id="net-stop-btn" onclick="netStopConnect()" style="padding:8px 18px;font-size:13px;display:none;color:var(--danger)"><i class="ph-duotone ph-stop-circle" style="margin-right:0.35rem"></i>Stop</button>
             </div>
           </div>
           <div id="net-conn-log" style="display:none;margin-top:12px;background:var(--bg);border-radius:8px;padding:10px 14px;max-height:150px;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.6;color:var(--muted)"></div>
@@ -353,7 +357,7 @@
         <!-- Live Marketplace Link -->
         <div class="panel" style="background:var(--surface-2);margin-top:16px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between">
           <div>
-            <div style="font-size:13px;font-weight:600">🌐 Your Marketplace</div>
+            <div style="font-size:13px;font-weight:600"><i class="ph-duotone ph-globe" style="margin-right:0.35rem"></i>Your Marketplace</div>
             <div style="font-size:12px;color:var(--muted)">Enabled workflows appear here for anyone to use</div>
           </div>
           <a href="https://comfyclaw.app" target="_blank" style="background:var(--accent);color:var(--bg);padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap">Visit comfyclaw.app →</a>
@@ -444,7 +448,7 @@
     function toast(msg, durationMs = 3000) {
       const el = document.createElement('div');
       el.className = 'toast';
-      el.textContent = msg;
+      el.innerHTML = msg;
       document.getElementById('toast-container').appendChild(el);
       setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 300); }, durationMs);
     }
@@ -562,7 +566,7 @@
           });
         }
       } catch(e) { /* gateway offline, will retry on refresh */ }
-      toast('🔗 Provider account connected');
+      toast('<i class="ph-duotone ph-link" style="margin-right:0.35rem"></i>Provider account connected');
       await netInit();
       // Auto-start GPU connection
       await netStartConnect();
@@ -579,15 +583,23 @@
         const status = data.provider?.status || 'unknown';
         netProviderStatus = status;
         netHasPayoutMethod = !!data.provider?.stripe_account_id;
-        dot.style.background = status === 'active' ? 'var(--success)' : status === 'onboarding' ? 'var(--warning)' : 'var(--danger)';
-        text.textContent = status === 'active' ? 'Active' : status === 'onboarding' ? 'Complete Stripe setup' : status;
+        // Registration status stored but dot/text reflect live GPU connection (updated by netPollConnection)
+        if (status === 'onboarding' || status === 'pending') {
+          dot.style.background = 'var(--warning)';
+          text.textContent = 'Complete Stripe setup';
+        }
+        // For active providers, default to offline until netPollConnection confirms
+        if (status === 'active') {
+          dot.style.background = 'var(--danger)';
+          text.textContent = 'GPU Offline';
+        }
         // Handle onboarding state
         const onboardingBanner = document.getElementById('net-onboarding-banner');
         if (status === 'onboarding' || status === 'pending') {
           onboardingBanner.style.display = '';
           onboardingBanner.innerHTML = `
             <div class="panel" style="background:rgba(251,191,36,0.1);border:1px solid var(--warning);padding:20px;text-align:center">
-              <div style="font-size:1.5em;margin-bottom:8px">⚠️</div>
+              <div style="font-size:1.5em;margin-bottom:8px"><i class="ph-duotone ph-warning" style="color:var(--warning)"></i></div>
               <h3 style="font-size:15px;margin:0 0 6px">Complete Your Stripe Setup</h3>
               <p style="color:var(--muted);font-size:13px;margin:0 0 14px">You need to finish Stripe onboarding to receive payouts. Your workflows can run for free until then.</p>
               <button class="primary" onclick="netResumeOnboarding()" id="net-resume-btn" style="padding:10px 24px;font-size:14px">Complete Stripe Setup →</button>
@@ -634,10 +646,10 @@
         const stats = netWfStats[wf.id] || {};
         const totalRuns = stats.total_runs || 0;
         const completedRuns = stats.completed_runs || 0;
-        return `<div style="padding:14px 16px;background:var(--surface-2);border:1px solid ${pub ? 'var(--accent)' : 'var(--border)'};border-radius:12px;${pub ? 'box-shadow:0 0 0 1px rgba(0,229,255,0.2)' : ''}">
+        return `<div style="padding:14px 16px;background:var(--surface-2);border:1px solid var(--border);border-radius:12px">
           <div style="display:flex;align-items:center;justify-content:space-between">
             <div style="display:flex;align-items:center;gap:10px">
-              <span style="font-size:1.3em">${wf.emoji || '🧩'}</span>
+              <span style="font-size:1.3em">${wf.emoji || '<i class="ph-duotone ph-puzzle-piece" style="font-size:1.3em"></i>'}</span>
               <div>
                 <div style="font-weight:600;font-size:14px">${wf.title || 'Untitled'}</div>
                 <div style="font-size:12px;color:var(--muted)">${(wf.primaryInputNodes || []).length} inputs · ${totalRuns > 0 ? `<span style="color:var(--accent)">${completedRuns}/${totalRuns} runs</span>` : 'No runs yet'}</div>
@@ -676,7 +688,7 @@
       if (!wf) return;
       wf.published = publish;
       await api.put('/api/workflows/' + wfId, wf);
-      toast(publish ? `✅ ${wf.emoji || '🧩'} ${wf.title || 'Workflow'} is now live` : `⏸ ${wf.emoji || '🧩'} ${wf.title || 'Workflow'} taken offline`);
+      toast(publish ? `<i class="ph-duotone ph-check-circle" style="color:var(--success);margin-right:0.35rem"></i>${wf.emoji || '<i class="ph-duotone ph-puzzle-piece"></i>'} ${wf.title || 'Workflow'} is now live` : `<i class="ph-duotone ph-pause-circle" style="color:var(--warning);margin-right:0.35rem"></i>${wf.emoji || '<i class="ph-duotone ph-puzzle-piece"></i>'} ${wf.title || 'Workflow'} taken offline`);
       netRenderWorkflows();
       // Refresh network connection so gateway sees updated workflow list
       try {
@@ -731,12 +743,12 @@
         });
         const data = await res.json();
         if (data.status === 'started' || data.status === 'already_running') {
-          toast('⚡ GPU connection started');
+          toast('<i class="ph-duotone ph-lightning" style="margin-right:0.35rem"></i>GPU connection started');
           netPollConnection();
           if (!netConnInterval) netConnInterval = setInterval(netPollConnection, 3000);
         }
       } catch(e) { console.error(e); }
-      btn.disabled = false; btn.textContent = '▶ Start';
+      btn.disabled = false; btn.innerHTML = '<i class="ph-duotone ph-play" style="margin-right:0.35rem"></i>Start';
     }
 
     async function netStopConnect() {
@@ -745,11 +757,11 @@
       try {
         await fetch('/api/network/stop', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}' });
       } catch(e) {}
-      btn.disabled = false; btn.textContent = '⏹ Stop';
+      btn.disabled = false; btn.innerHTML = '<i class="ph-duotone ph-stop-circle" style="margin-right:0.35rem"></i>Stop';
       // Clear connection log
       const logEl = document.getElementById('net-conn-log');
       if (logEl) { logEl.innerHTML = ''; logEl.style.display = 'none'; }
-      toast('⏹ GPU connection stopped');
+      toast('<i class="ph-duotone ph-stop-circle" style="margin-right:0.35rem"></i>GPU connection stopped');
       netPollConnection();
     }
 
@@ -762,11 +774,15 @@
         const startBtn = document.getElementById('net-start-btn');
         const stopBtn = document.getElementById('net-stop-btn');
         const logEl = document.getElementById('net-conn-log');
+        const topDot = document.getElementById('net-status-dot');
+        const topText = document.getElementById('net-status-text');
         if (data.running) {
           dot.style.background = 'var(--success)';
           text.textContent = `Connected (PID ${data.pid})`;
           startBtn.style.display = 'none';
           stopBtn.style.display = '';
+          if (topDot) topDot.style.background = 'var(--success)';
+          if (topText) topText.textContent = 'GPU Online';
           // Show log
           if (data.log && data.log.length) {
             logEl.style.display = '';
@@ -778,6 +794,8 @@
           text.textContent = 'Disconnected';
           startBtn.style.display = '';
           stopBtn.style.display = 'none';
+          if (topDot) topDot.style.background = 'var(--danger)';
+          if (topText) topText.textContent = 'GPU Offline';
           if (netConnInterval) { clearInterval(netConnInterval); netConnInterval = null; }
           // Show last log lines if any
           if (data.log && data.log.length) {
@@ -811,7 +829,7 @@
       if (netConnInterval) { clearInterval(netConnInterval); netConnInterval = null; }
       const logEl = document.getElementById('net-conn-log');
       if (logEl) { logEl.innerHTML = ''; logEl.style.display = 'none'; }
-      toast('🔌 Provider account disconnected');
+      toast('<i class="ph-duotone ph-plug" style="margin-right:0.35rem"></i>Provider account disconnected');
       netInit();
     }
 
@@ -908,7 +926,7 @@
         const card = document.createElement('div');
         card.className = 'card';
         card.innerHTML = `
-          <h3>${workflow.emoji || '🧩'} ${workflow.title}</h3>
+          <h3>${workflow.emoji || '<i class="ph-duotone ph-puzzle-piece"></i>'} ${workflow.title}</h3>
           <div class="muted">${workflow.description || ''}</div>
         `;
         card.onclick = () => openWorkflowDetail(workflow);
@@ -928,7 +946,7 @@
       detail.innerHTML = `
         <div class="row" style="justify-content:space-between;align-items:center;">
           <div>
-            <h3>${workflow.emoji || '🧩'} ${workflow.title}</h3>
+            <h3>${workflow.emoji || '<i class="ph-duotone ph-puzzle-piece"></i>'} ${workflow.title}</h3>
             <div class="muted">${workflow.description || ''}</div>
           </div>
           <div class="row">
@@ -1152,9 +1170,9 @@
           wrap.innerHTML = `
             <div class="muted">${fieldId}</div>
             <div class="row" style="align-items:center;gap:0;">
-              <button class="secondary res-down" style="border-radius:12px 0 0 12px;padding:10px 14px;font-size:18px;">◀</button>
+              <button class="secondary res-down" style="border-radius:12px 0 0 12px;padding:10px 14px;font-size:18px;"><i class="ph-duotone ph-caret-left"></i></button>
               <input type="number" data-node="${node.nodeId}" data-field="${node.fieldPath}" value="${curVal}" step="128" min="512" max="2048" style="border-radius:0;text-align:center;width:100px;-moz-appearance:textfield;" />
-              <button class="secondary res-up" style="border-radius:0 12px 12px 0;padding:10px 14px;font-size:18px;">▶</button>
+              <button class="secondary res-up" style="border-radius:0 12px 12px 0;padding:10px 14px;font-size:18px;"><i class="ph-duotone ph-caret-right"></i></button>
             </div>
           `;
         } else if (Array.isArray(node.options)) {
@@ -1164,10 +1182,22 @@
             <select data-node="${node.nodeId}" data-field="${node.fieldPath}">${options}</select>
           `;
         } else if (node.type === 'int' || node.type === 'float' || node.type === 'number') {
-          wrap.innerHTML = `
-            <div class="muted">${fieldId}</div>
-            <input type="number" data-node="${node.nodeId}" data-field="${node.fieldPath}" value="${node.currentValue ?? ''}" />
-          `;
+          const isSeedField = /seed/i.test(node.fieldPath) || /seed/i.test(node.label || '');
+          if (isSeedField) {
+            wrap.innerHTML = `
+              <div class="muted">${fieldId}</div>
+              <div class="row" style="align-items:center;gap:0;">
+                <input type="number" data-node="${node.nodeId}" data-field="${node.fieldPath}" value="${node.currentValue ?? ''}" style="flex:1;border-radius:12px 0 0 12px;" />
+                <button class="secondary" onclick="this.parentElement.querySelector('input').value=-1" title="Randomize seed" style="border-radius:0 12px 12px 0;padding:10px 14px;font-size:18px;"><i class="ph-duotone ph-dice-five"></i></button>
+              </div>
+              <div class="muted" style="margin-top:4px;font-size:11px">Leave -1 for random</div>
+            `;
+          } else {
+            wrap.innerHTML = `
+              <div class="muted">${fieldId}</div>
+              <input type="number" data-node="${node.nodeId}" data-field="${node.fieldPath}" value="${node.currentValue ?? ''}" />
+            `;
+          }
         } else {
           wrap.innerHTML = `
             <div class="muted">${fieldId}</div>
@@ -1228,7 +1258,7 @@
               const resultSub = result.subfolder || subfolder;
               const filename = resultSub ? `${resultSub}/${result.name}` : result.name;
               hiddenInput.value = filename;
-              statusEl.textContent = `✓ ${result.name}`;
+              statusEl.innerHTML = `<i class="ph-duotone ph-check" style="color:var(--success);margin-right:0.35rem"></i>${result.name}`;
               statusEl.style.color = 'var(--success)';
               const node = (workflow.primaryInputNodes || []).find(n => n.nodeId === nodeId && n.fieldPath === field);
               if (node) node.currentValue = filename;
@@ -1387,12 +1417,19 @@
       });
     }
 
+    const lastDashInputs = {};
     async function runWorkflow(workflow, detail) {
       const status = detail.querySelector('#run-status');
       const outputContainer = detail.querySelector('#run-output');
+      const updatedNodes = getRunInputs(workflow, detail);
+      // Check for identical inputs to last run
+      const inputKey = JSON.stringify(updatedNodes, Object.keys(updatedNodes).sort());
+      if (lastDashInputs[workflow.id] === inputKey) {
+        toast('<i class="ph-duotone ph-info" style="color:var(--cyan);margin-right:0.35rem"></i>Same settings as last run — change the prompt, seed, or other settings for a new result.');
+        return;
+      }
       status.innerHTML = '<span class="status-pulse">Queued...</span>';
       outputContainer.innerHTML = '';
-      const updatedNodes = getRunInputs(workflow, detail);
       const res = await api.post(`/api/workflows/${workflow.id}/run`, {
         inputs: updatedNodes,
         primaryInputs: updatedNodes,
@@ -1402,6 +1439,7 @@
         status.innerHTML = '<span class="status-pulse" style="--status-color: var(--danger);">Failed to queue workflow.</span>';
         return;
       }
+      lastDashInputs[workflow.id] = inputKey;
       status.innerHTML = `<span class="status-pulse">Queued: ${res.prompt_id}</span>`;
       const promptId = res.prompt_id;
       let attempts = 0;
@@ -1411,7 +1449,7 @@
         if (history && history.status === 'complete' && history.output) {
           clearInterval(timer);
           status.innerHTML = '<span class="status-pulse complete">Complete</span>';
-          toast(`✨ ${workflow.emoji || '🧩'} Generation complete`);
+          toast(`<i class="ph-duotone ph-sparkle" style="margin-right:0.35rem"></i>${workflow.emoji || '<i class="ph-duotone ph-puzzle-piece"></i>'} Generation complete`);
           renderOutputPreview(history.output, outputContainer);
           await loadWorkflowGallery(workflow.id);
           await refreshGallery();
@@ -1478,7 +1516,7 @@
           if (status.status === 'complete') {
             clearInterval(timer);
             progress.textContent = `Complete (${done}/${status.runs.length})`;
-            toast(`✨ Batch complete — ${done} generations finished`);
+            toast(`<i class="ph-duotone ph-sparkle" style="margin-right:0.35rem"></i>Batch complete — ${done} generations finished`);
             await loadWorkflowGallery(workflow.id);
             await refreshGallery();
           }
@@ -1530,7 +1568,7 @@
       state.workflows.forEach(wf => {
         const opt = document.createElement('option');
         opt.value = wf.id;
-        opt.textContent = `${wf.emoji || '🧩'} ${wf.title}`;
+        opt.textContent = `${wf.emoji || ''} ${wf.title}`.trim();
         filter.appendChild(opt);
       });
     }
@@ -1618,7 +1656,7 @@
       meta.innerHTML = `
         <div><strong>${output.workflowTitle || 'Workflow'}</strong></div>
         <div class="muted">${new Date(output.timestamp).toLocaleString()}</div>
-        <div class="status-pill">🟢 ${output.status || 'complete'}</div>
+        <div class="status-pill"><i class="ph-duotone ph-circle" style="color:var(--success);margin-right:0.35rem"></i>${output.status || 'complete'}</div>
         ${batchLine}
         <div>${inputs || 'No inputs recorded.'}</div>
         <div class="row">

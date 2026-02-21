@@ -5,7 +5,9 @@ import datetime
 import json
 import os
 import random
+import struct
 import sys
+import threading
 import time
 import uuid
 import urllib.parse
@@ -1210,7 +1212,89 @@ def network_connect(args: argparse.Namespace) -> None:
             header += bytes([0x80 | 127]) + struct.pack(">Q", length)
         sock.sendall(header + mask + masked)
 
-    def execute_job(job_msg):
+    def _track_comfyui_progress(server, prompt_id, job_id, progress_cb):
+        """Connect to ComfyUI WS and relay progress updates."""
+        import socket as _sock
+        parsed = urllib.parse.urlparse(server["url"].rstrip("/"))
+        host = parsed.hostname or "127.0.0.1"
+        port = parsed.port or 80
+        try:
+            s = _sock.create_connection((host, port), timeout=10)
+            api_key = server.get("apiKey", "")
+            qs = f"clientId=provider-{job_id[:8]}"
+            if api_key:
+                qs += f"&token={api_key}"
+            import base64 as _b64
+            ws_key = _b64.b64encode(os.urandom(16)).decode()
+            handshake = (
+                f"GET /ws?{qs} HTTP/1.1\r\n"
+                f"Host: {host}:{port}\r\n"
+                f"Upgrade: websocket\r\n"
+                f"Connection: Upgrade\r\n"
+                f"Sec-WebSocket-Key: {ws_key}\r\n"
+                f"Sec-WebSocket-Version: 13\r\n\r\n"
+            )
+            s.send(handshake.encode())
+            resp = b""
+            while b"\r\n\r\n" not in resp:
+                chunk = s.recv(1024)
+                if not chunk:
+                    return
+                resp += chunk
+            if b"101" not in resp.split(b"\r\n")[0]:
+                return
+            s.settimeout(2)
+            start = time.time()
+            while time.time() - start < 600:
+                try:
+                    header = s.recv(2)
+                    if len(header) < 2:
+                        break
+                    opcode = header[0] & 0x0F
+                    if opcode == 0x8:
+                        break
+                    length = header[1] & 0x7F
+                    if opcode == 0x9:
+                        payload = s.recv(length) if length else b""
+                        s.send(bytes([0x8A, len(payload)]) + payload)
+                        continue
+                    if length == 126:
+                        length = struct.unpack(">H", s.recv(2))[0]
+                    elif length == 127:
+                        length = struct.unpack(">Q", s.recv(8))[0]
+                    payload = b""
+                    while len(payload) < length:
+                        chunk = s.recv(length - len(payload))
+                        if not chunk:
+                            break
+                        payload += chunk
+                    if not payload:
+                        continue
+                    try:
+                        text = payload.decode("utf-8", errors="replace").strip()
+                        if not text.startswith("{"):
+                            continue
+                        msg = json.loads(text)
+                    except (json.JSONDecodeError, UnicodeDecodeError):
+                        continue
+                    msg_data = msg.get("data", {})
+                    if msg_data.get("prompt_id") and msg_data["prompt_id"] != prompt_id:
+                        continue
+                    if msg.get("type") == "progress":
+                        val = msg_data.get("value", 0)
+                        mx = msg_data.get("max", 1)
+                        progress_cb(val / mx if mx > 0 else 0)
+                    elif msg.get("type") == "executed":
+                        break
+                except _sock.timeout:
+                    continue
+                except Exception:
+                    break
+            s.close()
+        except Exception:
+            pass
+
+    def execute_job(job_msg, progress_cb=None):
         """Execute a job on local ComfyUI and return result."""
         job_id = job_msg["job_id"]
         workflow_id = job_msg["workflow_id"]
@@ -1225,10 +1309,12 @@ def network_connect(args: argparse.Namespace) -> None:
             return {"type": "failed", "job_id": job_id, "error": "no ComfyUI server"}
 
         # Build prompt
+        import copy
         wf_json = wf.get("workflowJson", {})
         prompt = wf_json.get("prompt", wf_json) if isinstance(wf_json, dict) else wf_json
         if isinstance(prompt, dict) and "prompt" in prompt:
             prompt = prompt["prompt"]
+        prompt = copy.deepcopy(prompt)  # Don't mutate the original workflow
 
         for key, val in inputs.items():
             if "." not in key:
@@ -1236,6 +1322,19 @@ def network_connect(args: argparse.Namespace) -> None:
             node_id, field = key.split(".", 1)
             if node_id in prompt:
                 prompt[node_id].setdefault("inputs", {})[field] = val
+
+        # Randomize seed if -1 or 0 to prevent ComfyUI caching identical prompts
+        resolved_seeds = {}
+        for node_id, node in prompt.items():
+            node_inputs = node.get("inputs", {})
+            if "seed" in node_inputs and node_inputs["seed"] in (-1, 0, "-1", "0"):
+                resolved = random.randint(1, 2**32 - 1)
+                node_inputs["seed"] = resolved
+                resolved_seeds[f"{node_id}.seed"] = resolved
+            if "noise_seed" in node_inputs and node_inputs["noise_seed"] in (-1, 0, "-1", "0"):
+                resolved = random.randint(1, 2**32 - 1)
+                node_inputs["noise_seed"] = resolved
+                resolved_seeds[f"{node_id}.noise_seed"] = resolved
 
         # Submit to ComfyUI
         submit_url = server["url"].rstrip("/") + "/prompt"
@@ -1253,6 +1352,11 @@ def network_connect(args: argparse.Namespace) -> None:
                 return {"type": "failed", "job_id": job_id, "error": "no prompt_id from ComfyUI"}
         except Exception as e:
             return {"type": "failed", "job_id": job_id, "error": f"ComfyUI submit error: {e}"}
+
+        # Start progress tracking thread
+        if progress_cb:
+            t = threading.Thread(target=_track_comfyui_progress, args=(server, prompt_id, job_id, progress_cb), daemon=True)
+            t.start()
 
         # Poll for completion
         history_url = server["url"].rstrip("/") + "/history/" + prompt_id
@@ -1301,6 +1405,7 @@ def network_connect(args: argparse.Namespace) -> None:
                                         "job_id": job_id,
                                         "output": _b64.b64encode(output_bytes).decode(),
                                         "output_type": output_type,
+                                        "resolved_seeds": resolved_seeds,
                                     }
                         return {"type": "failed", "job_id": job_id, "error": "no output files"}
             except Exception:
@@ -1381,11 +1486,16 @@ def network_connect(args: argparse.Namespace) -> None:
                         wf_title = next((w.get("title", wf_id) for w in data.get("workflows", []) if w["id"] == wf_id), wf_id)
                         print(f"📥 Job {job_id[:12]}... → {wf_title}")
 
-                        # Send progress
+                        # Send initial progress
                         ws_send(sock, {"type": "progress", "job_id": job_id, "progress": 0.05})
 
-                        # Execute
-                        result = execute_job(msg)
+                        # Execute with live progress relay
+                        def _relay_progress(p):
+                            try:
+                                ws_send(sock, {"type": "progress", "job_id": job_id, "progress": round(p, 3)})
+                            except Exception:
+                                pass
+                        result = execute_job(msg, progress_cb=_relay_progress)
                         ws_send(sock, result)
 
                         status_emoji = "✅" if result["type"] == "complete" else "❌"
