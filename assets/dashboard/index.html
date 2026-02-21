@@ -512,7 +512,7 @@
     }
 
     // --- Network (Provider) ---
-    const GW_URL = `${location.protocol}//${location.hostname}:8788`;
+    const GW_URL = localStorage.getItem('ccn_gateway_url') || 'https://comfyclaw.app';
     let netProviderKey = localStorage.getItem('ccn_provider_key') || '';
     let netProviderStatus = 'unknown';
     let netHasPayoutMethod = false;
@@ -790,13 +790,31 @@
             logEl.scrollTop = logEl.scrollHeight;
           }
         } else {
-          dot.style.background = 'var(--danger)';
-          text.textContent = 'Disconnected';
-          startBtn.style.display = '';
-          stopBtn.style.display = 'none';
-          if (topDot) topDot.style.background = 'var(--danger)';
-          if (topText) topText.textContent = 'GPU Offline';
-          if (netConnInterval) { clearInterval(netConnInterval); netConnInterval = null; }
+          // Local subprocess not running — check if GPU is connected externally (e.g. CLI started manually)
+          let externallyConnected = false;
+          try {
+            const gwHealth = await fetch(GW_URL + '/api/v1/health');
+            if (gwHealth.ok) {
+              const gwData = await gwHealth.json();
+              externallyConnected = (gwData.connected_providers || 0) > 0;
+            }
+          } catch(e) {}
+          if (externallyConnected) {
+            dot.style.background = 'var(--success)';
+            text.textContent = 'Connected (external)';
+            startBtn.style.display = 'none';
+            stopBtn.style.display = '';
+            if (topDot) topDot.style.background = 'var(--success)';
+            if (topText) topText.textContent = 'GPU Online';
+          } else {
+            dot.style.background = 'var(--danger)';
+            text.textContent = 'Disconnected';
+            startBtn.style.display = '';
+            stopBtn.style.display = 'none';
+            if (topDot) topDot.style.background = 'var(--danger)';
+            if (topText) topText.textContent = 'GPU Offline';
+          }
+          if (!externallyConnected && netConnInterval) { clearInterval(netConnInterval); netConnInterval = null; }
           // Show last log lines if any
           if (data.log && data.log.length) {
             logEl.style.display = '';
