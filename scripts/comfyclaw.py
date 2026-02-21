@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 import argparse
+import base64
 import datetime
 import json
 import os
 import random
 import sys
+import time
 import uuid
+import urllib.parse
 import urllib.request
 import urllib.error
 from typing import Any, Dict, List, Tuple
@@ -1043,6 +1046,15 @@ def build_parser() -> argparse.ArgumentParser:
     gw_key_revoke.add_argument("key")
     gw_key_revoke.set_defaults(func=gateway_key_revoke)
 
+    # Network commands
+    net = sub.add_parser("network")
+    net_sub = net.add_subparsers(dest="net_cmd")
+    net_connect = net_sub.add_parser("connect")
+    net_connect.add_argument("--gateway", required=True, help="Gateway URL (e.g. https://comfyclaw.app)")
+    net_connect.add_argument("--key", required=True, help="Provider API key (ccn_sk_...)")
+    net_connect.add_argument("--workflows", nargs="*", help="Workflow IDs to offer (default: all published)")
+    net_connect.set_defaults(func=network_connect)
+
     # Workflow publish/unpublish
     wf_publish = wf_sub.add_parser("publish")
     wf_publish.add_argument("id")
@@ -1094,6 +1106,309 @@ def gateway_key_revoke(args: argparse.Namespace) -> None:
     from gateway.server import revoke_api_key
     revoke_api_key(args.key)
     print(f"Revoked: {args.key}")
+
+
+def network_connect(args: argparse.Namespace) -> None:
+    """Connect to a ComfyClaw Network gateway as a GPU provider."""
+    import hashlib
+    import struct
+    import socket as _socket
+
+    gateway_url = args.gateway.rstrip("/")
+    api_key = args.key
+    data = ensure_config()
+
+    # Determine which workflows to offer
+    if args.workflows:
+        workflows = args.workflows
+    else:
+        workflows = [w["id"] for w in data.get("workflows", []) if w.get("published")]
+    if not workflows:
+        print("❌ No published workflows found. Publish workflows first with: comfyclaw workflow publish <id>")
+        sys.exit(1)
+
+    # Detect GPU info
+    gpu_info = {"name": "Unknown GPU", "vram_gb": 0}
+    try:
+        server = next((s for s in data.get("servers", []) if s.get("isDefault")), None)
+        if not server and data.get("servers"):
+            server = data["servers"][0]
+        if server:
+            url = server["url"].rstrip("/") + "/system_stats"
+            req = urllib.request.Request(url)
+            if server.get("apiKey"):
+                req.add_header("Authorization", f"Bearer {server['apiKey']}")
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                stats = json.loads(resp.read())
+            devices = stats.get("devices", [])
+            if devices:
+                gpu = devices[0]
+                gpu_info = {
+                    "name": gpu.get("name", "Unknown GPU"),
+                    "vram_gb": round(gpu.get("vram_total", 0) / (1024**3), 1),
+                    "vram_free_gb": round(gpu.get("vram_free", 0) / (1024**3), 1),
+                }
+    except Exception:
+        pass
+
+    print(f"🖥️  ComfyClaw Network Provider")
+    print(f"   Gateway: {gateway_url}")
+    print(f"   GPU: {gpu_info.get('name')} ({gpu_info.get('vram_gb', '?')}GB)")
+    print(f"   Workflows: {len(workflows)}")
+    for wf_id in workflows:
+        wf = next((w for w in data.get("workflows", []) if w["id"] == wf_id), None)
+        if wf:
+            print(f"     • {wf.get('emoji', '')} {wf.get('title', wf_id)}")
+    print()
+
+    def _recv_all(sock, n):
+        buf = b""
+        while len(buf) < n:
+            chunk = sock.recv(n - len(buf))
+            if not chunk:
+                return None
+            buf += chunk
+        return buf
+
+    def ws_recv(sock):
+        header = _recv_all(sock, 2)
+        if not header or len(header) < 2:
+            return None
+        opcode = header[0] & 0x0F
+        length = header[1] & 0x7F
+        if opcode == 0x8:
+            return None
+        if opcode == 0x9:  # ping → send pong
+            payload = _recv_all(sock, length) if length else b""
+            # Send masked pong
+            mask = os.urandom(4)
+            masked = bytes(b ^ mask[i % 4] for i, b in enumerate(payload or b""))
+            frame = bytes([0x8A, 0x80 | len(masked)]) + mask + masked
+            sock.sendall(frame)
+            return ws_recv(sock)
+        if length == 126:
+            length = struct.unpack(">H", _recv_all(sock, 2))[0]
+        elif length == 127:
+            length = struct.unpack(">Q", _recv_all(sock, 8))[0]
+        payload = _recv_all(sock, length) if length else b""
+        if payload is None:
+            return None
+        return payload
+
+    def ws_send(sock, msg_dict):
+        payload = json.dumps(msg_dict).encode("utf-8")
+        mask = os.urandom(4)
+        masked = bytes(b ^ mask[i % 4] for i, b in enumerate(payload))
+        length = len(masked)
+        header = bytes([0x81])  # FIN + text
+        if length < 126:
+            header += bytes([0x80 | length])
+        elif length < 65536:
+            header += bytes([0x80 | 126]) + struct.pack(">H", length)
+        else:
+            header += bytes([0x80 | 127]) + struct.pack(">Q", length)
+        sock.sendall(header + mask + masked)
+
+    def execute_job(job_msg):
+        """Execute a job on local ComfyUI and return result."""
+        job_id = job_msg["job_id"]
+        workflow_id = job_msg["workflow_id"]
+        inputs = job_msg.get("inputs", {})
+
+        wf = next((w for w in data.get("workflows", []) if w["id"] == workflow_id), None)
+        if not wf:
+            return {"type": "failed", "job_id": job_id, "error": "workflow not found locally"}
+
+        server = next((s for s in data.get("servers", []) if s.get("id") == wf.get("serverRef")), None)
+        if not server:
+            return {"type": "failed", "job_id": job_id, "error": "no ComfyUI server"}
+
+        # Build prompt
+        wf_json = wf.get("workflowJson", {})
+        prompt = wf_json.get("prompt", wf_json) if isinstance(wf_json, dict) else wf_json
+        if isinstance(prompt, dict) and "prompt" in prompt:
+            prompt = prompt["prompt"]
+
+        for key, val in inputs.items():
+            if "." not in key:
+                continue
+            node_id, field = key.split(".", 1)
+            if node_id in prompt:
+                prompt[node_id].setdefault("inputs", {})[field] = val
+
+        # Submit to ComfyUI
+        submit_url = server["url"].rstrip("/") + "/prompt"
+        req_data = json.dumps({"prompt": prompt}).encode()
+        req = urllib.request.Request(submit_url, data=req_data, method="POST")
+        req.add_header("Content-Type", "application/json")
+        if server.get("apiKey"):
+            req.add_header("Authorization", f"Bearer {server['apiKey']}")
+
+        try:
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                result = json.loads(resp.read())
+            prompt_id = result.get("prompt_id")
+            if not prompt_id:
+                return {"type": "failed", "job_id": job_id, "error": "no prompt_id from ComfyUI"}
+        except Exception as e:
+            return {"type": "failed", "job_id": job_id, "error": f"ComfyUI submit error: {e}"}
+
+        # Poll for completion
+        history_url = server["url"].rstrip("/") + "/history/" + prompt_id
+        for _ in range(300):  # 10 min max
+            time.sleep(2)
+            try:
+                req = urllib.request.Request(history_url)
+                if server.get("apiKey"):
+                    req.add_header("Authorization", f"Bearer {server['apiKey']}")
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    history = json.loads(resp.read())
+                if prompt_id in history:
+                    entry = history[prompt_id]
+                    status_info = entry.get("status", {})
+                    if status_info.get("completed"):
+                        outputs = entry.get("outputs", {})
+                        # Find output file
+                        for node_id, node_out in outputs.items():
+                            for key in ("images", "videos", "gifs"):
+                                items = node_out.get(key, [])
+                                for item in items:
+                                    filename = item.get("filename")
+                                    if not filename:
+                                        continue
+                                    # Download the output
+                                    params = urllib.parse.urlencode({
+                                        "filename": filename,
+                                        "type": item.get("type", "output"),
+                                        "subfolder": item.get("subfolder", ""),
+                                    })
+                                    dl_url = server["url"].rstrip("/") + "/view?" + params
+                                    dl_req = urllib.request.Request(dl_url)
+                                    if server.get("apiKey"):
+                                        dl_req.add_header("Authorization", f"Bearer {server['apiKey']}")
+                                    with urllib.request.urlopen(dl_req, timeout=60) as dl_resp:
+                                        output_bytes = dl_resp.read()
+                                    ext = os.path.splitext(filename)[1].lower()
+                                    output_type = "image/png"
+                                    if ext in (".jpg", ".jpeg"): output_type = "image/jpeg"
+                                    elif ext == ".webp": output_type = "image/webp"
+                                    elif ext == ".mp4": output_type = "video/mp4"
+                                    elif ext == ".gif": output_type = "image/gif"
+                                    import base64 as _b64
+                                    return {
+                                        "type": "complete",
+                                        "job_id": job_id,
+                                        "output": _b64.b64encode(output_bytes).decode(),
+                                        "output_type": output_type,
+                                    }
+                        return {"type": "failed", "job_id": job_id, "error": "no output files"}
+            except Exception:
+                pass
+        return {"type": "failed", "job_id": job_id, "error": "timeout waiting for ComfyUI"}
+
+    # Main connection loop with auto-reconnect
+    while True:
+        try:
+            # Parse gateway URL
+            parsed = urllib.parse.urlparse(gateway_url)
+            use_ssl = parsed.scheme == "https"
+            host = parsed.hostname
+            port = parsed.port or (443 if use_ssl else 80)
+            ws_path = f"/ws/provider?key={api_key}"
+
+            print(f"⚡ Connecting to {gateway_url}...")
+            sock = _socket.create_connection((host, port), timeout=15)
+
+            if use_ssl:
+                import ssl
+                ctx = ssl.create_default_context()
+                sock = ctx.wrap_socket(sock, server_hostname=host)
+
+            # WebSocket handshake
+            ws_key = base64.b64encode(os.urandom(16)).decode()
+            handshake = (
+                f"GET {ws_path} HTTP/1.1\r\n"
+                f"Host: {host}:{port}\r\n"
+                f"Upgrade: websocket\r\n"
+                f"Connection: Upgrade\r\n"
+                f"Sec-WebSocket-Key: {ws_key}\r\n"
+                f"Sec-WebSocket-Version: 13\r\n"
+                f"\r\n"
+            )
+            sock.sendall(handshake.encode())
+
+            # Read response
+            response = b""
+            while b"\r\n\r\n" not in response:
+                chunk = sock.recv(4096)
+                if not chunk:
+                    raise ConnectionError("No handshake response")
+                response += chunk
+
+            status_line = response.split(b"\r\n")[0]
+            if b"101" not in status_line:
+                print(f"❌ Handshake failed: {status_line.decode()}")
+                sock.close()
+                time.sleep(5)
+                continue
+
+            # Send ready message
+            ws_send(sock, {
+                "type": "ready",
+                "workflows": workflows,
+                "gpu_info": gpu_info,
+            })
+            print(f"✅ Connected! Listening for jobs...")
+            print(f"   Press Ctrl+C to disconnect\n")
+
+            # Main loop
+            sock.settimeout(10)
+            while True:
+                try:
+                    frame = ws_recv(sock)
+                    if frame is None:
+                        print("🔌 Connection closed by gateway")
+                        break
+                    msg = json.loads(frame.decode("utf-8"))
+
+                    if msg.get("type") == "ping":
+                        ws_send(sock, {"type": "pong"})
+
+                    elif msg.get("type") == "job":
+                        job_id = msg["job_id"]
+                        wf_id = msg["workflow_id"]
+                        wf_title = next((w.get("title", wf_id) for w in data.get("workflows", []) if w["id"] == wf_id), wf_id)
+                        print(f"📥 Job {job_id[:12]}... → {wf_title}")
+
+                        # Send progress
+                        ws_send(sock, {"type": "progress", "job_id": job_id, "progress": 0.05})
+
+                        # Execute
+                        result = execute_job(msg)
+                        ws_send(sock, result)
+
+                        status_emoji = "✅" if result["type"] == "complete" else "❌"
+                        print(f"   {status_emoji} {result['type']}")
+
+                except _socket.timeout:
+                    continue
+                except Exception as e:
+                    print(f"⚠️  Error: {e}")
+                    break
+
+            sock.close()
+
+        except KeyboardInterrupt:
+            print("\n👋 Disconnecting...")
+            try:
+                sock.close()
+            except:
+                pass
+            break
+        except Exception as e:
+            print(f"⚠️  Connection error: {e}")
+            print("   Reconnecting in 5 seconds...")
+            time.sleep(5)
 
 
 def workflow_publish(args: argparse.Namespace) -> None:
