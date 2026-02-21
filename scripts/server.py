@@ -653,6 +653,21 @@ class ComfyClawHandler(SimpleHTTPRequestHandler):
             return _json_response(self, 200, result)
         if self.path == "/api/network/stop":
             return _json_response(self, 200, net_stop())
+        if self.path == "/api/network/refresh-workflows":
+            # Restart connection so updated workflow list is sent to gateway
+            with _net_lock:
+                if not _net_proc or _net_proc.poll() is not None:
+                    return _json_response(self, 200, {"status": "not_running"})
+            # Read current connection params from the running process args
+            payload = _read_json(self)
+            gw = payload.get("gateway_url", "").strip()
+            key = payload.get("api_key", "").strip()
+            if gw and key:
+                net_stop()
+                import time as _time; _time.sleep(0.5)
+                result = net_start(gw, key)
+                return _json_response(self, 200, {"status": "refreshed", **result})
+            return _json_response(self, 400, {"error": "gateway_url and api_key required"})
         if self.path == "/api/servers":
             payload = _read_json(self)
             payload.setdefault("id", os.urandom(6).hex())

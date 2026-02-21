@@ -267,6 +267,7 @@ def workflow_import(args: argparse.Namespace) -> None:
         "secondaryInputNodes": input_nodes,
         "primaryOutputNodes": output_nodes,
         "secondaryOutputNodes": [],
+        "published": False,
     }
     data["workflows"].append(wf)
     save_config(data)

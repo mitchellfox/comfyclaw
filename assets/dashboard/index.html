@@ -462,9 +462,16 @@
       .modal-card { grid-template-columns: 1fr; }
       .workflow-detail { grid-template-columns: 1fr; }
     }
+    /* Toast notifications */
+    #toast-container { position:fixed;bottom:24px;right:24px;z-index:10000;display:flex;flex-direction:column;gap:8px;pointer-events:none }
+    .toast { background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:12px 18px;font-size:13px;color:var(--text);box-shadow:0 8px 24px rgba(0,0,0,0.4);pointer-events:auto;animation:toastIn 0.3s ease;max-width:360px }
+    .toast.out { animation:toastOut 0.3s ease forwards }
+    @keyframes toastIn { from { opacity:0;transform:translateY(16px) } to { opacity:1;transform:translateY(0) } }
+    @keyframes toastOut { from { opacity:1;transform:translateY(0) } to { opacity:0;transform:translateY(16px) } }
   </style>
 </head>
 <body>
+<div id="toast-container"></div>
   <header>
     <h1>⚡ <span>ComfyClaw</span> Dashboard</h1>
     <div class="tabs">
@@ -604,15 +611,20 @@
           <h3 style="font-size:18px;margin:0 0 8px">🚀 Ready to Start Earning?</h3>
           <p style="color:var(--muted);font-size:13px;margin:0 0 20px">Create your account on comfyclaw.app to get set up with secure payments via Stripe.</p>
           <a href="https://comfyclaw.app/provider/signup" target="_blank" class="primary" style="display:inline-block;padding:14px 32px;font-size:16px;font-weight:700;text-decoration:none;border-radius:12px;background:var(--accent);color:var(--bg)">Sign Up on comfyclaw.app →</a>
-          <div style="margin-top:20px;padding-top:14px;border-top:1px solid var(--border)">
-            <details style="font-size:12px;color:var(--muted)">
-              <summary style="cursor:pointer">Already signed up? Enter your API key to connect</summary>
-              <div style="display:flex;gap:8px;margin-top:8px;max-width:400px;margin-left:auto;margin-right:auto">
-                <input type="text" id="net-existing-key" placeholder="ccn_sk_..." style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;flex:1">
-                <button class="secondary" onclick="netLoginKey()" style="padding:8px 14px;font-size:12px">Connect</button>
+        </div>
+
+        <!-- API Key Connection — prominent step -->
+        <div class="panel" style="background:var(--surface-2);margin-top:20px;padding:24px">
+          <div style="display:flex;align-items:flex-start;gap:14px">
+            <div style="width:36px;height:36px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px">🔑</div>
+            <div style="flex:1">
+              <h3 style="font-size:15px;margin:0 0 4px">Already have an account?</h3>
+              <p style="color:var(--muted);font-size:13px;margin:0 0 14px">Paste your API key from <a href="https://comfyclaw.app/account" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600">comfyclaw.app/account</a> to connect this machine to the network.</p>
+              <div style="display:flex;gap:8px;max-width:460px">
+                <input type="text" id="net-existing-key" placeholder="ccn_sk_..." style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;font-family:'JetBrains Mono',monospace;flex:1" onkeydown="if(event.key==='Enter')netLoginKey()">
+                <button class="primary" onclick="netLoginKey()" style="padding:10px 20px;font-size:13px;font-weight:700;white-space:nowrap">Connect →</button>
               </div>
-              <p style="color:var(--muted);font-size:11px;margin-top:8px">Your API key was shown after signup on comfyclaw.app</p>
-            </details>
+            </div>
           </div>
         </div>
       </div>
@@ -629,6 +641,20 @@
 
         <!-- Onboarding Banner (shown when Stripe setup incomplete) -->
         <div id="net-onboarding-banner" style="display:none;margin-top:16px"></div>
+
+        <!-- Payout Method Banner (shown when no Stripe connected) -->
+        <div id="net-payout-banner" style="display:none;margin-top:16px">
+          <div class="panel" style="background:linear-gradient(135deg, rgba(0,229,255,0.08), rgba(34,197,94,0.08));border:1px solid var(--accent);padding:20px;border-radius:12px">
+            <div style="display:flex;align-items:center;gap:14px">
+              <div style="font-size:1.8em;flex-shrink:0">💳</div>
+              <div style="flex:1">
+                <h3 style="font-size:15px;margin:0 0 4px">Connect a Payout Method to Earn Money</h3>
+                <p style="color:var(--muted);font-size:13px;margin:0">Your workflows are currently shared for free. Connect Stripe to set your own prices and receive payouts to your bank account.</p>
+              </div>
+              <a href="https://comfyclaw.app/provider" target="_blank" style="background:var(--accent);color:var(--bg);padding:10px 20px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap;flex-shrink:0">Set Up Payouts →</a>
+            </div>
+          </div>
+        </div>
 
         <!-- Earnings Cards -->
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px">
@@ -755,6 +781,14 @@
   </template>
 
   <script>
+    function toast(msg, durationMs = 3000) {
+      const el = document.createElement('div');
+      el.className = 'toast';
+      el.textContent = msg;
+      document.getElementById('toast-container').appendChild(el);
+      setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 300); }, durationMs);
+    }
+
     const api = {
       async get(path) {
         const res = await fetch(path);
@@ -817,6 +851,8 @@
     const GW_URL = `${location.protocol}//${location.hostname}:8788`;
     let netProviderKey = localStorage.getItem('ccn_provider_key') || '';
     let netProviderStatus = 'unknown';
+    let netHasPayoutMethod = false;
+    let netWfStats = {};
 
     function calcEarnings() {
       const price = parseFloat(document.getElementById('calc-price').value) || 0.35;
@@ -850,12 +886,26 @@
       return fetch(GW_URL + '/api/v1' + path, { ...opts, headers });
     }
 
-    function netLoginKey() {
+    async function netLoginKey() {
       const key = document.getElementById('net-existing-key').value.trim();
       if (!key) return;
       localStorage.setItem('ccn_provider_key', key);
       netProviderKey = key;
-      netInit();
+      // Auto-register as provider if not already one
+      try {
+        const res = await netProviderApi('/provider/status');
+        if (res.status === 404) {
+          await fetch(GW_URL + '/api/v1/auth/provider-register', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: '' })
+          });
+        }
+      } catch(e) { /* gateway offline, will retry on refresh */ }
+      toast('🔗 Provider account connected');
+      await netInit();
+      // Auto-start GPU connection
+      await netStartConnect();
     }
 
     async function netRefreshDashboard() {
@@ -868,6 +918,7 @@
         const data = await res.json();
         const status = data.provider?.status || 'unknown';
         netProviderStatus = status;
+        netHasPayoutMethod = !!data.provider?.stripe_account_id;
         dot.style.background = status === 'active' ? 'var(--success)' : status === 'onboarding' ? 'var(--warning)' : 'var(--danger)';
         text.textContent = status === 'active' ? 'Active' : status === 'onboarding' ? 'Complete Stripe setup' : status;
         // Handle onboarding state
@@ -885,6 +936,9 @@
         } else {
           onboardingBanner.style.display = 'none';
         }
+        // Show/hide payout banner
+        const payoutBanner = document.getElementById('net-payout-banner');
+        if (payoutBanner) payoutBanner.style.display = netHasPayoutMethod ? 'none' : '';
         // Earnings
         const earn = data.earnings || {};
         document.getElementById('net-earned').textContent = '$' + ((earn.total_cents || 0) / 100).toFixed(2);
@@ -897,6 +951,11 @@
       // Poll connection status
       netPollConnection();
       if (!netConnInterval) netConnInterval = setInterval(netPollConnection, 5000);
+      // Fetch workflow stats
+      try {
+        const statsRes = await netProviderApi('/workflows/stats');
+        if (statsRes.ok) netWfStats = await statsRes.json();
+      } catch(e) {}
       // Render workflows
       netRenderWorkflows();
       // Fetch earnings list
@@ -912,13 +971,16 @@
         const defaultPrice = wf.outputType === 'video' ? '2.00' : wf.title?.includes('I2I') ? '0.50' : '0.35';
         const displayPrice = price || defaultPrice;
         const consumerPrice = (parseFloat(displayPrice) * 1.4).toFixed(2);
+        const stats = netWfStats[wf.id] || {};
+        const totalRuns = stats.total_runs || 0;
+        const completedRuns = stats.completed_runs || 0;
         return `<div style="padding:14px 16px;background:var(--surface-2);border:1px solid ${pub ? 'var(--accent)' : 'var(--border)'};border-radius:12px;${pub ? 'box-shadow:0 0 0 1px rgba(0,229,255,0.2)' : ''}">
           <div style="display:flex;align-items:center;justify-content:space-between">
             <div style="display:flex;align-items:center;gap:10px">
               <span style="font-size:1.3em">${wf.emoji || '🧩'}</span>
               <div>
                 <div style="font-weight:600;font-size:14px">${wf.title || 'Untitled'}</div>
-                <div style="font-size:12px;color:var(--muted)">${(wf.primaryInputNodes || []).length} inputs</div>
+                <div style="font-size:12px;color:var(--muted)">${(wf.primaryInputNodes || []).length} inputs · ${totalRuns > 0 ? `<span style="color:var(--accent)">${completedRuns}/${totalRuns} runs</span>` : 'No runs yet'}</div>
               </div>
             </div>
             <label style="position:relative;width:44px;height:24px;cursor:pointer">
@@ -927,7 +989,7 @@
               <span style="position:absolute;top:3px;left:${pub ? '23px' : '3px'};width:18px;height:18px;background:#fff;border-radius:50%;transition:0.2s"></span>
             </label>
           </div>
-          ${pub ? netProviderStatus === 'active' ? `<div style="display:flex;align-items:center;gap:12px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+          ${pub ? netHasPayoutMethod ? `<div style="display:flex;align-items:center;gap:12px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
             <div style="flex:1">
               <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px">Your price</label>
               <div style="display:flex;align-items:center;gap:4px">
@@ -941,8 +1003,8 @@
             </div>
           </div>` : `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
             <div>
-              <span style="font-size:13px;font-weight:700;color:var(--warning)">FREE</span>
-              <span style="font-size:11px;color:var(--muted);margin-left:6px">Complete Stripe setup to set prices</span>
+              <span style="font-size:13px;font-weight:700;color:var(--muted)">$0.00</span>
+              <span style="font-size:11px;color:var(--muted);margin-left:6px">Connect a payout method to set prices</span>
             </div>
           </div>` : ''}
         </div>`;
@@ -954,7 +1016,15 @@
       if (!wf) return;
       wf.published = publish;
       await api.put('/api/workflows/' + wfId, wf);
+      toast(publish ? `✅ ${wf.emoji || '🧩'} ${wf.title || 'Workflow'} is now live` : `⏸ ${wf.emoji || '🧩'} ${wf.title || 'Workflow'} taken offline`);
       netRenderWorkflows();
+      // Refresh network connection so gateway sees updated workflow list
+      try {
+        await fetch('/api/network/refresh-workflows', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ gateway_url: GW_URL, api_key: netProviderKey })
+        });
+      } catch(e) {}
     }
 
     async function netSetPrice(wfId, price) {
@@ -1001,6 +1071,7 @@
         });
         const data = await res.json();
         if (data.status === 'started' || data.status === 'already_running') {
+          toast('⚡ GPU connection started');
           netPollConnection();
           if (!netConnInterval) netConnInterval = setInterval(netPollConnection, 3000);
         }
@@ -1015,6 +1086,10 @@
         await fetch('/api/network/stop', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}' });
       } catch(e) {}
       btn.disabled = false; btn.textContent = '⏹ Stop';
+      // Clear connection log
+      const logEl = document.getElementById('net-conn-log');
+      if (logEl) { logEl.innerHTML = ''; logEl.style.display = 'none'; }
+      toast('⏹ GPU connection stopped');
       netPollConnection();
     }
 
@@ -1068,9 +1143,15 @@
       if (btn) { btn.disabled = false; btn.textContent = 'Complete Stripe Setup →'; }
     }
 
-    function netLogout() {
+    async function netLogout() {
+      // Stop GPU connection before disconnecting
+      try { await fetch('/api/network/stop', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}' }); } catch(e) {}
       localStorage.removeItem('ccn_provider_key');
       netProviderKey = '';
+      if (netConnInterval) { clearInterval(netConnInterval); netConnInterval = null; }
+      const logEl = document.getElementById('net-conn-log');
+      if (logEl) { logEl.innerHTML = ''; logEl.style.display = 'none'; }
+      toast('🔌 Provider account disconnected');
       netInit();
     }
 
@@ -1670,6 +1751,7 @@
         if (history && history.status === 'complete' && history.output) {
           clearInterval(timer);
           status.innerHTML = '<span class="status-pulse complete">Complete</span>';
+          toast(`✨ ${workflow.emoji || '🧩'} Generation complete`);
           renderOutputPreview(history.output, outputContainer);
           await loadWorkflowGallery(workflow.id);
           await refreshGallery();
@@ -1736,6 +1818,7 @@
           if (status.status === 'complete') {
             clearInterval(timer);
             progress.textContent = `Complete (${done}/${status.runs.length})`;
+            toast(`✨ Batch complete — ${done} generations finished`);
             await loadWorkflowGallery(workflow.id);
             await refreshGallery();
           }
