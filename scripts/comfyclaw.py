@@ -1212,7 +1212,7 @@ def network_connect(args: argparse.Namespace) -> None:
             header += bytes([0x80 | 127]) + struct.pack(">Q", length)
         sock.sendall(header + mask + masked)
 
-    def _track_comfyui_progress(server, prompt_id, job_id, progress_cb, preview_cb=None):
+    def _track_comfyui_progress(server, prompt_id, job_id, progress_cb, preview_cb=None, stop_event=None):
         """Connect to ComfyUI WS and relay progress + preview updates."""
         import socket as _sock
         parsed = urllib.parse.urlparse(server["url"].rstrip("/"))
@@ -1247,6 +1247,8 @@ def network_connect(args: argparse.Namespace) -> None:
             start = time.time()
             last_preview = 0
             while time.time() - start < 600:
+                if stop_event and stop_event.is_set():
+                    break
                 try:
                     header = s.recv(2)
                     if len(header) < 2:
@@ -1308,7 +1310,7 @@ def network_connect(args: argparse.Namespace) -> None:
         except Exception:
             pass
 
-    def execute_job(job_msg, progress_cb=None, preview_cb=None):
+    def execute_job(job_msg, progress_cb=None, preview_cb=None, _track_stop=None):
         """Execute a job on local ComfyUI and return result."""
         job_id = job_msg["job_id"]
         workflow_id = job_msg["workflow_id"]
@@ -1367,9 +1369,10 @@ def network_connect(args: argparse.Namespace) -> None:
         except Exception as e:
             return {"type": "failed", "job_id": job_id, "error": f"ComfyUI submit error: {e}"}
 
-        # Start progress tracking thread
+        # Start progress tracking thread (with stop event so it exits when job completes)
+        track_stop = _track_stop or threading.Event()
         if progress_cb:
-            t = threading.Thread(target=_track_comfyui_progress, args=(server, prompt_id, job_id, progress_cb, preview_cb), daemon=True)
+            t = threading.Thread(target=_track_comfyui_progress, args=(server, prompt_id, job_id, progress_cb, preview_cb, track_stop), daemon=True)
             t.start()
 
         # Poll for completion
@@ -1472,8 +1475,14 @@ def network_connect(args: argparse.Namespace) -> None:
                 time.sleep(5)
                 continue
 
+            # Thread-safe send lock (preview/progress threads write to same socket)
+            send_lock = threading.Lock()
+            def safe_ws_send(msg_dict):
+                with send_lock:
+                    ws_send(sock, msg_dict)
+
             # Send ready message
-            ws_send(sock, {
+            safe_ws_send({
                 "type": "ready",
                 "workflows": workflows,
                 "gpu_info": gpu_info,
@@ -1492,7 +1501,7 @@ def network_connect(args: argparse.Namespace) -> None:
                     msg = json.loads(frame.decode("utf-8"))
 
                     if msg.get("type") == "ping":
-                        ws_send(sock, {"type": "pong"})
+                        safe_ws_send({"type": "pong"})
 
                     elif msg.get("type") == "job":
                         job_id = msg["job_id"]
@@ -1501,21 +1510,24 @@ def network_connect(args: argparse.Namespace) -> None:
                         print(f"📥 Job {job_id[:12]}... → {wf_title}")
 
                         # Send initial progress
-                        ws_send(sock, {"type": "progress", "job_id": job_id, "progress": 0.05})
+                        safe_ws_send({"type": "progress", "job_id": job_id, "progress": 0.05})
 
                         # Execute with live progress + preview relay
                         def _relay_progress(p, _jid=job_id):
                             try:
-                                ws_send(sock, {"type": "progress", "job_id": _jid, "progress": round(p, 3)})
+                                safe_ws_send({"type": "progress", "job_id": _jid, "progress": round(p, 3)})
                             except Exception:
                                 pass
                         def _relay_preview(img_b64, mime, _jid=job_id):
                             try:
-                                ws_send(sock, {"type": "preview", "job_id": _jid, "image": img_b64, "mime": mime})
+                                safe_ws_send({"type": "preview", "job_id": _jid, "image": img_b64, "mime": mime})
                             except Exception:
                                 pass
-                        result = execute_job(msg, progress_cb=_relay_progress, preview_cb=_relay_preview)
-                        ws_send(sock, result)
+                        # Create stop event to kill tracking thread when job finishes
+                        track_stop = threading.Event()
+                        result = execute_job(msg, progress_cb=_relay_progress, preview_cb=_relay_preview, _track_stop=track_stop)
+                        track_stop.set()  # Signal tracking thread to exit
+                        safe_ws_send(result)
 
                         status_emoji = "✅" if result["type"] == "complete" else "❌"
                         print(f"   {status_emoji} {result['type']}")
