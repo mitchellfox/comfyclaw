@@ -615,6 +615,9 @@
           </div>
         </div>
 
+        <!-- Onboarding Banner (shown when Stripe setup incomplete) -->
+        <div id="net-onboarding-banner" style="display:none;margin-top:16px"></div>
+
         <!-- Earnings Cards -->
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px">
           <div class="panel" style="background:var(--surface-2);text-align:center;padding:20px">
@@ -862,6 +865,21 @@
         const status = data.provider?.status || 'unknown';
         dot.style.background = status === 'active' ? 'var(--success)' : status === 'onboarding' ? 'var(--warning)' : 'var(--danger)';
         text.textContent = status === 'active' ? 'Active' : status === 'onboarding' ? 'Complete Stripe setup' : status;
+        // Handle onboarding state
+        const onboardingBanner = document.getElementById('net-onboarding-banner');
+        if (status === 'onboarding' || status === 'pending') {
+          onboardingBanner.style.display = '';
+          onboardingBanner.innerHTML = `
+            <div class="panel" style="background:rgba(251,191,36,0.1);border:1px solid var(--warning);padding:20px;text-align:center">
+              <div style="font-size:1.5em;margin-bottom:8px">⚠️</div>
+              <h3 style="font-size:15px;margin:0 0 6px">Complete Your Stripe Setup</h3>
+              <p style="color:var(--muted);font-size:13px;margin:0 0 14px">You need to finish Stripe onboarding to receive payouts. Your workflows can run for free until then.</p>
+              <button class="primary" onclick="netResumeOnboarding()" id="net-resume-btn" style="padding:10px 24px;font-size:14px">Complete Stripe Setup →</button>
+            </div>
+          `;
+        } else {
+          onboardingBanner.style.display = 'none';
+        }
         // Earnings
         const earn = data.earnings || {};
         document.getElementById('net-earned').textContent = '$' + ((earn.total_cents || 0) / 100).toFixed(2);
@@ -958,6 +976,21 @@
           </div>`;
         }).join('');
       } catch(e) { el.innerHTML = '<div style="color:var(--muted);font-size:13px">Could not load earnings</div>'; }
+    }
+
+    async function netResumeOnboarding() {
+      const btn = document.getElementById('net-resume-btn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Loading...'; }
+      try {
+        const res = await netProviderApi('/provider/onboarding-link', { method: 'POST' });
+        const data = await res.json();
+        if (data.url) {
+          window.open(data.url, '_blank');
+        } else {
+          alert(data.error || 'Failed to get onboarding link. Try again.');
+        }
+      } catch(e) { alert('Connection error'); }
+      if (btn) { btn.disabled = false; btn.textContent = 'Complete Stripe Setup →'; }
     }
 
     function netCopyCmd() {
