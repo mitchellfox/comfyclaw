@@ -1212,18 +1212,18 @@ def network_connect(args: argparse.Namespace) -> None:
             header += bytes([0x80 | 127]) + struct.pack(">Q", length)
         sock.sendall(header + mask + masked)
 
-    def _track_comfyui_progress(server, prompt_id, job_id, progress_cb):
-        """Connect to ComfyUI WS and relay progress updates."""
+    def _track_comfyui_progress(server, prompt_id, job_id, progress_cb, preview_cb=None):
+        """Connect to ComfyUI WS and relay progress + preview updates."""
         import socket as _sock
         parsed = urllib.parse.urlparse(server["url"].rstrip("/"))
         host = parsed.hostname or "127.0.0.1"
         port = parsed.port or 80
         try:
             s = _sock.create_connection((host, port), timeout=10)
-            api_key = server.get("apiKey", "")
+            api_key_val = server.get("apiKey", "")
             qs = f"clientId=provider-{job_id[:8]}"
-            if api_key:
-                qs += f"&token={api_key}"
+            if api_key_val:
+                qs += f"&token={api_key_val}"
             import base64 as _b64
             ws_key = _b64.b64encode(os.urandom(16)).decode()
             handshake = (
@@ -1245,6 +1245,7 @@ def network_connect(args: argparse.Namespace) -> None:
                 return
             s.settimeout(2)
             start = time.time()
+            last_preview = 0
             while time.time() - start < 600:
                 try:
                     header = s.recv(2)
@@ -1270,6 +1271,19 @@ def network_connect(args: argparse.Namespace) -> None:
                         payload += chunk
                     if not payload:
                         continue
+
+                    # Binary frame = preview image from ComfyUI
+                    # Format: first byte = type (1=JPEG, 2=PNG), rest = image data
+                    if opcode == 0x2 and len(payload) > 8 and preview_cb:
+                        now = time.time()
+                        if now - last_preview >= 0.5:  # throttle to max 2 fps
+                            img_type = payload[0]
+                            img_data = payload[4:]  # skip 4-byte header (type + padding)
+                            mime = "image/jpeg" if img_type == 1 else "image/png"
+                            preview_cb(_b64.b64encode(img_data).decode(), mime)
+                            last_preview = now
+                        continue
+
                     try:
                         text = payload.decode("utf-8", errors="replace").strip()
                         if not text.startswith("{"):
@@ -1294,7 +1308,7 @@ def network_connect(args: argparse.Namespace) -> None:
         except Exception:
             pass
 
-    def execute_job(job_msg, progress_cb=None):
+    def execute_job(job_msg, progress_cb=None, preview_cb=None):
         """Execute a job on local ComfyUI and return result."""
         job_id = job_msg["job_id"]
         workflow_id = job_msg["workflow_id"]
@@ -1355,7 +1369,7 @@ def network_connect(args: argparse.Namespace) -> None:
 
         # Start progress tracking thread
         if progress_cb:
-            t = threading.Thread(target=_track_comfyui_progress, args=(server, prompt_id, job_id, progress_cb), daemon=True)
+            t = threading.Thread(target=_track_comfyui_progress, args=(server, prompt_id, job_id, progress_cb, preview_cb), daemon=True)
             t.start()
 
         # Poll for completion
@@ -1489,13 +1503,18 @@ def network_connect(args: argparse.Namespace) -> None:
                         # Send initial progress
                         ws_send(sock, {"type": "progress", "job_id": job_id, "progress": 0.05})
 
-                        # Execute with live progress relay
-                        def _relay_progress(p):
+                        # Execute with live progress + preview relay
+                        def _relay_progress(p, _jid=job_id):
                             try:
-                                ws_send(sock, {"type": "progress", "job_id": job_id, "progress": round(p, 3)})
+                                ws_send(sock, {"type": "progress", "job_id": _jid, "progress": round(p, 3)})
                             except Exception:
                                 pass
-                        result = execute_job(msg, progress_cb=_relay_progress)
+                        def _relay_preview(img_b64, mime, _jid=job_id):
+                            try:
+                                ws_send(sock, {"type": "preview", "job_id": _jid, "image": img_b64, "mime": mime})
+                            except Exception:
+                                pass
+                        result = execute_job(msg, progress_cb=_relay_progress, preview_cb=_relay_preview)
                         ws_send(sock, result)
 
                         status_emoji = "✅" if result["type"] == "complete" else "❌"
