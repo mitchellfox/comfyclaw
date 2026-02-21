@@ -40,8 +40,18 @@ def _net_reader(pipe, label):
     pipe.close()
 
 
+_net_gateway_url = ""
+_net_api_key = ""
+
 def net_start(gateway_url: str, api_key: str, workflows: list = None) -> dict:
-    global _net_proc
+    global _net_proc, _net_gateway_url, _net_api_key
+    _net_gateway_url = gateway_url
+    _net_api_key = api_key
+    # Persist to config for showcase uploads
+    cfg = ensure_config()
+    cfg.setdefault("network", {})["gateway_url"] = gateway_url
+    cfg["network"]["api_key"] = api_key
+    save_config(cfg)
     with _net_lock:
         if _net_proc and _net_proc.poll() is None:
             return {"status": "already_running", "pid": _net_proc.pid}
@@ -103,7 +113,7 @@ def net_status() -> dict:
                 _net_proc = None
     with _net_log_lock:
         log = list(_net_log[-50:])
-    return {"running": running, "pid": pid, "log": log}
+    return {"running": running, "pid": pid, "log": log, "gateway_url": _net_gateway_url, "api_key": _net_api_key}
 
 
 OUTPUT_TYPES = {
@@ -664,6 +674,84 @@ class ComfyClawHandler(SimpleHTTPRequestHandler):
 
     def handle_api_post(self) -> None:
         data = ensure_config()
+
+        # Showcase: upload a gallery image as showcase to the gateway
+        if self.path == "/api/showcase/upload":
+            payload = _read_json(self)
+            output_path = payload.get("outputPath", "")
+            workflow_id = payload.get("workflowId", "")
+            if not output_path or not os.path.isfile(output_path):
+                return _json_response(self, 400, {"error": "File not found"})
+            if not workflow_id:
+                return _json_response(self, 400, {"error": "workflowId required"})
+            # Get gateway URL and API key from network status or config
+            net = net_status()
+            gateway_url = net.get("gateway_url", "").rstrip("/")
+            api_key = net.get("api_key", "")
+            if not gateway_url or not api_key:
+                # Try to get from localStorage-equivalent (stored in config by dashboard)
+                gateway_url = data.get("network", {}).get("gateway_url", "https://comfyclaw.app")
+                api_key = data.get("network", {}).get("api_key", "")
+            if not api_key:
+                return _json_response(self, 400, {"error": "Not connected to network. Enter API key first."})
+            # Resize to 800px wide JPEG thumbnail using convert (ImageMagick)
+            import tempfile
+            tmp = tempfile.NamedTemporaryFile(suffix=".jpg", delete=False)
+            tmp.close()
+            try:
+                subprocess.run([
+                    "convert", output_path,
+                    "-resize", "800x800>",
+                    "-quality", "85",
+                    tmp.name
+                ], check=True, capture_output=True, timeout=10)
+                with open(tmp.name, "rb") as f:
+                    thumb_data = f.read()
+            except Exception as e:
+                # Fallback: send original
+                with open(output_path, "rb") as f:
+                    thumb_data = f.read()
+            finally:
+                try: os.unlink(tmp.name)
+                except: pass
+            # Upload to gateway
+            fname = os.path.basename(output_path)
+            if not fname.lower().endswith(".jpg"):
+                fname = os.path.splitext(fname)[0] + ".jpg"
+            boundary = os.urandom(8).hex()
+            body = (
+                f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"{fname}\"\r\nContent-Type: image/jpeg\r\n\r\n"
+            ).encode() + thumb_data + f"\r\n--{boundary}--\r\n".encode()
+            up_url = f"{gateway_url}/api/v1/showcase/{workflow_id}"
+            req = urllib.request.Request(up_url, data=body, method="POST")
+            req.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
+            req.add_header("Authorization", f"Bearer {api_key}")
+            try:
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    result = json.loads(resp.read())
+                return _json_response(self, 200, result)
+            except Exception as e:
+                return _json_response(self, 500, {"error": f"Upload failed: {e}"})
+
+        # Showcase: remove all showcase images for a workflow
+        if self.path == "/api/showcase/clear":
+            payload = _read_json(self)
+            workflow_id = payload.get("workflowId", "")
+            net = net_status()
+            gateway_url = (net.get("gateway_url") or data.get("network", {}).get("gateway_url", "https://comfyclaw.app")).rstrip("/")
+            api_key = net.get("api_key") or data.get("network", {}).get("api_key", "")
+            if not api_key:
+                return _json_response(self, 400, {"error": "Not connected to network"})
+            try:
+                clear_url = f"{gateway_url}/api/v1/showcase/{workflow_id}/clear"
+                req = urllib.request.Request(clear_url, method="POST", data=b"{}")
+                req.add_header("Authorization", f"Bearer {api_key}")
+                req.add_header("Content-Type", "application/json")
+                urllib.request.urlopen(req, timeout=10)
+                return _json_response(self, 200, {"status": "cleared"})
+            except Exception as e:
+                return _json_response(self, 500, {"error": f"Clear failed: {e}"})
+
         if self.path == "/api/network/start":
             payload = _read_json(self)
             gateway_url = payload.get("gateway_url", "").strip()

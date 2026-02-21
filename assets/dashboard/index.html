@@ -1663,17 +1663,37 @@
         if (!wf) { toast('Workflow not found'); return; }
         if (!wf.showcaseImages) wf.showcaseImages = [];
         const idx = wf.showcaseImages.indexOf(output.outputPath);
+        scBtn.disabled = true;
         if (idx >= 0) {
+          // Remove: clear all and re-upload remaining
           wf.showcaseImages.splice(idx, 1);
+          await api.put('/api/workflows/' + wf.id, wf);
+          try {
+            await api.post('/api/showcase/clear', { workflowId: wf.id });
+            for (const imgPath of wf.showcaseImages) {
+              await api.post('/api/showcase/upload', { outputPath: imgPath, workflowId: wf.id });
+            }
+          } catch(e) {}
           scBtn.style.color = ''; scBtn.style.borderColor = '';
           toast(`<i class="ph-duotone ph-star" style="margin-right:0.35rem"></i>Removed from showcase`);
         } else {
-          if (wf.showcaseImages.length >= 6) { toast('Maximum 6 showcase images per workflow'); return; }
+          if (wf.showcaseImages.length >= 6) { toast('Maximum 6 showcase images per workflow'); scBtn.disabled = false; return; }
           wf.showcaseImages.push(output.outputPath);
+          await api.put('/api/workflows/' + wf.id, wf);
+          try {
+            const res = await api.post('/api/showcase/upload', { outputPath: output.outputPath, workflowId: wf.id });
+            if (res.error) throw new Error(res.error);
+          } catch(e) {
+            toast(`<i class="ph-duotone ph-warning" style="color:var(--warning);margin-right:0.35rem"></i>${e.message || 'Upload failed'}`);
+            wf.showcaseImages.pop();
+            await api.put('/api/workflows/' + wf.id, wf);
+            scBtn.disabled = false;
+            return;
+          }
           scBtn.style.color = 'var(--cyan)'; scBtn.style.borderColor = 'var(--cyan)';
-          toast(`<i class="ph-duotone ph-star" style="color:var(--cyan);margin-right:0.35rem"></i>Added to showcase for ${wf.title}`);
+          toast(`<i class="ph-duotone ph-star" style="color:var(--cyan);margin-right:0.35rem"></i>Added to showcase — live on comfyclaw.app!`);
         }
-        await api.put('/api/workflows/' + wf.id, wf);
+        scBtn.disabled = false;
       };
       const thumb = card.querySelector('.gallery-thumb');
       thumb.onclick = () => openModal(output);
