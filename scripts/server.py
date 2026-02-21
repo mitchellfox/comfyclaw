@@ -63,17 +63,31 @@ def net_start(gateway_url: str, api_key: str, workflows: list = None) -> dict:
 def net_stop() -> dict:
     global _net_proc
     with _net_lock:
-        if not _net_proc or _net_proc.poll() is not None:
+        if _net_proc and _net_proc.poll() is None:
+            _net_proc.terminate()
+            try:
+                _net_proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                _net_proc.kill()
+            pid = _net_proc.pid
             _net_proc = None
-            return {"status": "not_running"}
-        _net_proc.terminate()
-        try:
-            _net_proc.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            _net_proc.kill()
-        pid = _net_proc.pid
+            return {"status": "stopped", "pid": pid}
         _net_proc = None
-        return {"status": "stopped", "pid": pid}
+        # No managed subprocess — try to find and kill external CLI process
+        try:
+            import signal
+            result = subprocess.run(
+                ["pgrep", "-f", "comfyclaw.py network connect"],
+                capture_output=True, text=True
+            )
+            pids = [int(p) for p in result.stdout.strip().split("\n") if p.strip()]
+            if pids:
+                for pid in pids:
+                    os.kill(pid, signal.SIGTERM)
+                return {"status": "stopped", "pid": pids[0], "external": True}
+        except Exception:
+            pass
+        return {"status": "not_running"}
 
 
 def net_status() -> dict:
