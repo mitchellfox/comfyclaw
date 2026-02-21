@@ -787,6 +787,7 @@
     // --- Network (Provider) ---
     const GW_URL = `${location.protocol}//${location.hostname}:8788`;
     let netProviderKey = localStorage.getItem('ccn_provider_key') || '';
+    let netProviderStatus = 'unknown';
 
     function calcEarnings() {
       const price = parseFloat(document.getElementById('calc-price').value) || 0.35;
@@ -863,6 +864,7 @@
         if (res.status === 401) { netLogout(); return; }
         const data = await res.json();
         const status = data.provider?.status || 'unknown';
+        netProviderStatus = status;
         dot.style.background = status === 'active' ? 'var(--success)' : status === 'onboarding' ? 'var(--warning)' : 'var(--danger)';
         text.textContent = status === 'active' ? 'Active' : status === 'onboarding' ? 'Complete Stripe setup' : status;
         // Handle onboarding state
@@ -921,7 +923,7 @@
               <span style="position:absolute;top:3px;left:${pub ? '23px' : '3px'};width:18px;height:18px;background:#fff;border-radius:50%;transition:0.2s"></span>
             </label>
           </div>
-          ${pub ? `<div style="display:flex;align-items:center;gap:12px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+          ${pub ? netProviderStatus === 'active' ? `<div style="display:flex;align-items:center;gap:12px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
             <div style="flex:1">
               <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px">Your price</label>
               <div style="display:flex;align-items:center;gap:4px">
@@ -932,6 +934,11 @@
             <div style="text-align:right">
               <div style="font-size:11px;color:var(--muted)">Consumer pays</div>
               <div style="font-size:14px;font-weight:700;color:var(--success)">$${consumerPrice}</div>
+            </div>
+          </div>` : `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <span style="font-size:13px;font-weight:700;color:var(--warning)">FREE</span>
+              <span style="font-size:11px;color:var(--muted);margin-left:6px">Complete Stripe setup to set prices</span>
             </div>
           </div>` : ''}
         </div>`;
