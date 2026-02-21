@@ -937,7 +937,7 @@
       container.appendChild(panel);
     }
 
-    function renderWorkflows() {
+    async function renderWorkflows() {
       const container = document.getElementById('workflow-cards');
       container.innerHTML = '';
       for (const workflow of state.workflows) {
