@@ -525,9 +525,9 @@
       <div id="net-pitch">
         <div style="text-align:center;padding:20px 0 10px">
           <div style="font-size:3em;margin-bottom:12px">💰</div>
-          <h2 style="font-size:24px;margin:0;font-weight:800">Earn Money With Your GPU</h2>
-          <p style="color:var(--muted);margin:8px 0 0;font-size:15px;max-width:460px;margin-left:auto;margin-right:auto">
-            Your GPU is already running workflows. Share them on the ComfyClaw Network and get paid every time someone runs one.
+          <h2 style="font-size:24px;margin:0;font-weight:800">Turn Your GPU Into a Business</h2>
+          <p style="color:var(--muted);margin:8px 0 0;font-size:15px;max-width:500px;margin-left:auto;margin-right:auto">
+            Your workflows get listed on <a href="https://comfyclaw.app" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600">comfyclaw.app</a> — a marketplace where anyone can pay to run them on your GPU. You set the price, we handle the rest.
           </p>
         </div>
 
@@ -565,21 +565,37 @@
         </div>
 
         <!-- How it Works -->
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:20px">
-          <div class="panel" style="background:var(--surface-2);text-align:center;padding:20px 16px">
-            <div style="font-size:1.5em;margin-bottom:8px">📡</div>
-            <div style="font-weight:600;font-size:13px;margin-bottom:4px">Connect</div>
-            <div style="font-size:12px;color:var(--muted)">Your GPU connects to the network. No port forwarding needed.</div>
-          </div>
-          <div class="panel" style="background:var(--surface-2);text-align:center;padding:20px 16px">
-            <div style="font-size:1.5em;margin-bottom:8px">⚡</div>
-            <div style="font-weight:600;font-size:13px;margin-bottom:4px">Generate</div>
-            <div style="font-size:12px;color:var(--muted)">Users run your workflows remotely. You set the price.</div>
-          </div>
-          <div class="panel" style="background:var(--surface-2);text-align:center;padding:20px 16px">
-            <div style="font-size:1.5em;margin-bottom:8px">💸</div>
-            <div style="font-weight:600;font-size:13px;margin-bottom:4px">Earn</div>
-            <div style="font-size:12px;color:var(--muted)">Money goes straight to your bank. Automatic payouts.</div>
+        <div class="panel" style="background:var(--surface-2);margin-top:20px;padding:20px">
+          <h3 style="font-size:15px;margin:0 0 16px">How It Works</h3>
+          <div style="display:grid;gap:14px">
+            <div style="display:flex;gap:14px;align-items:flex-start">
+              <div style="width:32px;height:32px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:800;color:var(--accent);font-size:14px">1</div>
+              <div>
+                <div style="font-weight:600;font-size:14px">Enable your workflows</div>
+                <div style="font-size:12px;color:var(--muted)">Choose which workflows to share and set your price per run. Your workflow files stay private — only the input form is exposed.</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:14px;align-items:flex-start">
+              <div style="width:32px;height:32px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:800;color:var(--accent);font-size:14px">2</div>
+              <div>
+                <div style="font-weight:600;font-size:14px">They appear on <a href="https://comfyclaw.app" target="_blank" style="color:var(--accent);text-decoration:none">comfyclaw.app</a></div>
+                <div style="font-size:12px;color:var(--muted)">Your workflows are instantly listed on the marketplace. Users browse, pick a workflow, fill in their prompt, and hit generate.</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:14px;align-items:flex-start">
+              <div style="width:32px;height:32px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:800;color:var(--accent);font-size:14px">3</div>
+              <div>
+                <div style="font-weight:600;font-size:14px">Jobs run on your GPU automatically</div>
+                <div style="font-size:12px;color:var(--muted)">Your machine connects out to the network (no port forwarding). When someone pays to run your workflow, it executes on your local ComfyUI and sends back the result.</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:14px;align-items:flex-start">
+              <div style="width:32px;height:32px;border-radius:50%;background:rgba(34,197,94,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:800;color:var(--success);font-size:14px">$</div>
+              <div>
+                <div style="font-weight:600;font-size:14px">Money hits your bank account</div>
+                <div style="font-size:12px;color:var(--muted)">Earnings are tracked per job. Payouts are automatic via Stripe once you connect your bank. Your workflow IP is never exposed.</div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -644,12 +660,24 @@
             <button class="secondary" id="net-copy-cmd" onclick="netCopyCmd()" style="padding:6px 14px;font-size:12px">📋 Copy</button>
           </div>
           <code id="net-connect-cmd" style="display:block;background:var(--bg);padding:10px 14px;border-radius:8px;font-size:12px;margin-top:10px;word-break:break-all;user-select:all"></code>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px">This connects your GPU to comfyclaw.app so it can receive and process jobs from users. Keep it running to earn.</div>
+        </div>
+
+        <!-- Live Marketplace Link -->
+        <div class="panel" style="background:var(--surface-2);margin-top:16px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font-size:13px;font-weight:600">🌐 Your Marketplace</div>
+            <div style="font-size:12px;color:var(--muted)">Enabled workflows appear here for anyone to use</div>
+          </div>
+          <a href="https://comfyclaw.app" target="_blank" style="background:var(--accent);color:var(--bg);padding:8px 16px;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none;white-space:nowrap">Visit comfyclaw.app →</a>
         </div>
 
         <!-- Workflows with Pricing -->
         <div style="margin-top:20px">
-          <h3 style="font-size:15px;margin:0 0 12px">Your Workflows</h3>
-          <p style="color:var(--muted);font-size:13px;margin:-8px 0 12px">Enable workflows and set your price. Consumers pay your price + 40% platform fee.</p>
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px">
+            <h3 style="font-size:15px;margin:0">Your Workflows</h3>
+            <span style="font-size:12px;color:var(--muted)">Toggle on = live on comfyclaw.app</span>
+          </div>
           <div id="net-workflows" style="display:grid;gap:10px"></div>
         </div>
 
@@ -969,7 +997,7 @@
         const res = await netProviderApi('/provider/earnings');
         const earnings = await res.json();
         if (!Array.isArray(earnings) || !earnings.length) {
-          el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:12px">No earnings yet. Enable workflows and connect your GPU to start earning!</div>';
+          el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:12px">No earnings yet. Enable workflows above, run the connect command, and users on <a href="https://comfyclaw.app" target="_blank" style="color:var(--accent)">comfyclaw.app</a> will start sending you jobs!</div>';
           return;
         }
         el.innerHTML = earnings.slice(0, 10).map(e => {
