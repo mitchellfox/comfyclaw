@@ -4,6 +4,14 @@ A skill for [OpenClaw](https://openclaw.ai) that manages ComfyUI servers and wor
 
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
+## Install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/mitchellfox/comfyclaw/main/install.sh | bash
+```
+
+This clones the repo to `~/.comfyclaw` and adds the `comfyclaw` command to `~/.local/bin`. Requires Python 3.8+ and git. No pip dependencies.
+
 ## Features
 
 - **Multi-server management** — Add, edit, test, and remove ComfyUI servers
