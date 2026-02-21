@@ -1465,6 +1465,46 @@ def network_connect(args: argparse.Namespace) -> None:
                 "gpu_info": gpu_info,
             })
             print(f"✅ Connected! Listening for jobs...")
+
+            # Upload showcase images for each workflow
+            for wf in data.get("workflows", []):
+                showcase = wf.get("showcaseImages", [])
+                if not showcase:
+                    continue
+                wf_id = wf["id"]
+                wf_title = wf.get("title", wf_id[:8])
+                # Clear existing showcase on gateway, then upload fresh
+                try:
+                    clear_url = gateway_url.rstrip("/") + f"/api/v1/showcase/{wf_id}/clear"
+                    req = urllib.request.Request(clear_url, method="POST", data=b"{}")
+                    req.add_header("Authorization", f"Bearer {api_key}")
+                    req.add_header("Content-Type", "application/json")
+                    urllib.request.urlopen(req, timeout=10)
+                except Exception:
+                    pass
+                uploaded = 0
+                for img_path in showcase:
+                    if not os.path.isfile(img_path):
+                        continue
+                    try:
+                        fname = os.path.basename(img_path)
+                        boundary = os.urandom(8).hex()
+                        with open(img_path, "rb") as f:
+                            file_data = f.read()
+                        body = (
+                            f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"{fname}\"\r\nContent-Type: application/octet-stream\r\n\r\n"
+                        ).encode() + file_data + f"\r\n--{boundary}--\r\n".encode()
+                        up_url = gateway_url.rstrip("/") + f"/api/v1/showcase/{wf_id}"
+                        req = urllib.request.Request(up_url, data=body, method="POST")
+                        req.add_header("Content-Type", f"multipart/form-data; boundary={boundary}")
+                        req.add_header("Authorization", f"Bearer {api_key}")
+                        urllib.request.urlopen(req, timeout=30)
+                        uploaded += 1
+                    except Exception as e:
+                        print(f"   ⚠️ Failed to upload showcase for {wf_title}: {e}")
+                if uploaded:
+                    print(f"   🖼️ Uploaded {uploaded} showcase image{'s' if uploaded > 1 else ''} for {wf_title}")
+
             print(f"   Press Ctrl+C to disconnect\n")
 
             # Main loop

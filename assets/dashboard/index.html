@@ -1650,10 +1650,31 @@
         ${pipelineTag}
         <div class="gallery-meta">${inputs || '—'}</div>
         <div class="row">
+          <button class="secondary" data-action="showcase" title="Use as showcase image on comfyclaw.app"><i class="ph-duotone ph-star" style="margin-right:0.25rem"></i>Showcase</button>
           <button class="secondary" data-action="download">Download</button>
           <button class="danger" data-action="delete">Delete</button>
         </div>
       `;
+      const isShowcased = (state.workflows.find(w => w.id === output.workflowId)?.showcaseImages || []).includes(output.outputPath);
+      const scBtn = card.querySelector('[data-action="showcase"]');
+      if (isShowcased) { scBtn.style.color = 'var(--cyan)'; scBtn.style.borderColor = 'var(--cyan)'; }
+      scBtn.onclick = async () => {
+        const wf = state.workflows.find(w => w.id === output.workflowId);
+        if (!wf) { toast('Workflow not found'); return; }
+        if (!wf.showcaseImages) wf.showcaseImages = [];
+        const idx = wf.showcaseImages.indexOf(output.outputPath);
+        if (idx >= 0) {
+          wf.showcaseImages.splice(idx, 1);
+          scBtn.style.color = ''; scBtn.style.borderColor = '';
+          toast(`<i class="ph-duotone ph-star" style="margin-right:0.35rem"></i>Removed from showcase`);
+        } else {
+          if (wf.showcaseImages.length >= 6) { toast('Maximum 6 showcase images per workflow'); return; }
+          wf.showcaseImages.push(output.outputPath);
+          scBtn.style.color = 'var(--cyan)'; scBtn.style.borderColor = 'var(--cyan)';
+          toast(`<i class="ph-duotone ph-star" style="color:var(--cyan);margin-right:0.35rem"></i>Added to showcase for ${wf.title}`);
+        }
+        await api.put('/api/workflows/' + wf.id, wf);
+      };
       const thumb = card.querySelector('.gallery-thumb');
       thumb.onclick = () => openModal(output);
       card.querySelector('[data-action="download"]').onclick = () => {
