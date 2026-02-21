@@ -472,7 +472,7 @@
       <button class="tab" data-tab="workflows">Workflows</button>
       <button class="tab" data-tab="pipelines">Pipelines</button>
       <button class="tab" data-tab="gallery">Gallery</button>
-      <button class="tab" data-tab="gateway">⚡ Gateway</button>
+      <button class="tab" data-tab="network">💰 Network</button>
     </div>
   </header>
 
@@ -520,40 +520,146 @@
       <div id="gallery-list" class="gallery-grid"></div>
     </section>
 
-    <section id="gateway" class="panel hidden">
-      <div class="section-title">
-        <h2>⚡ Gateway</h2>
-        <div class="row" style="gap:8px;align-items:center">
-          <span id="gw-status-dot" style="width:10px;height:10px;border-radius:50%;background:#f35d6a;display:inline-block"></span>
-          <span id="gw-status-text" style="color:var(--muted);font-size:13px">Checking...</span>
+    <section id="network" class="panel hidden">
+      <!-- State 1: Not registered — show the pitch -->
+      <div id="net-pitch">
+        <div style="text-align:center;padding:20px 0 10px">
+          <div style="font-size:3em;margin-bottom:12px">💰</div>
+          <h2 style="font-size:24px;margin:0;font-weight:800">Earn Money With Your GPU</h2>
+          <p style="color:var(--muted);margin:8px 0 0;font-size:15px;max-width:460px;margin-left:auto;margin-right:auto">
+            Your GPU is already running workflows. Share them on the ComfyClaw Network and get paid every time someone runs one.
+          </p>
         </div>
-      </div>
 
-      <div style="display:grid;gap:16px;grid-template-columns:1fr 1fr;margin-top:16px">
-        <div class="panel" style="background:var(--surface-2)">
-          <h3 style="font-size:14px;margin:0 0 8px">🌐 Public URL</h3>
-          <div style="display:flex;gap:8px;align-items:center">
-            <code style="background:var(--bg);padding:8px 12px;border-radius:8px;flex:1;font-size:13px">https://comfyclaw.app</code>
-            <button class="secondary" onclick="navigator.clipboard.writeText('https://comfyclaw.app')" style="padding:6px 12px">Copy</button>
+        <!-- Revenue Calculator -->
+        <div class="panel" style="background:var(--surface-2);margin-top:24px;padding:20px">
+          <h3 style="font-size:15px;margin:0 0 16px">📊 Earnings Calculator</h3>
+          <div style="display:grid;gap:16px;grid-template-columns:1fr 1fr">
+            <div>
+              <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">Avg price per run</label>
+              <div style="display:flex;align-items:center;gap:4px">
+                <span style="color:var(--success);font-weight:700">$</span>
+                <input type="number" id="calc-price" value="0.35" min="0.05" max="50" step="0.05" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);width:100%;font-size:14px" oninput="calcEarnings()">
+              </div>
+            </div>
+            <div>
+              <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px">Runs per day</label>
+              <input type="range" id="calc-runs" min="10" max="1000" value="100" style="width:100%;accent-color:var(--accent)" oninput="calcEarnings()">
+              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted)"><span>10</span><span id="calc-runs-val">100</span><span>1000</span></div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px">
+            <div style="text-align:center;padding:16px;background:var(--bg);border-radius:12px">
+              <div style="font-size:1.4em;font-weight:800;color:var(--success)" id="calc-daily">$35</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">Per Day</div>
+            </div>
+            <div style="text-align:center;padding:16px;background:var(--bg);border-radius:12px">
+              <div style="font-size:1.4em;font-weight:800;color:var(--success)" id="calc-monthly">$1,050</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">Per Month</div>
+            </div>
+            <div style="text-align:center;padding:16px;background:var(--bg);border-radius:12px">
+              <div style="font-size:1.4em;font-weight:800;color:var(--accent)" id="calc-yearly">$12,600</div>
+              <div style="font-size:11px;color:var(--muted);margin-top:2px">Per Year</div>
+            </div>
           </div>
         </div>
-        <div class="panel" style="background:var(--surface-2)">
-          <h3 style="font-size:14px;margin:0 0 8px">📊 Queue</h3>
-          <div id="gw-stats" style="color:var(--muted);font-size:13px">—</div>
+
+        <!-- How it Works -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:20px">
+          <div class="panel" style="background:var(--surface-2);text-align:center;padding:20px 16px">
+            <div style="font-size:1.5em;margin-bottom:8px">📡</div>
+            <div style="font-weight:600;font-size:13px;margin-bottom:4px">Connect</div>
+            <div style="font-size:12px;color:var(--muted)">Your GPU connects to the network. No port forwarding needed.</div>
+          </div>
+          <div class="panel" style="background:var(--surface-2);text-align:center;padding:20px 16px">
+            <div style="font-size:1.5em;margin-bottom:8px">⚡</div>
+            <div style="font-weight:600;font-size:13px;margin-bottom:4px">Generate</div>
+            <div style="font-size:12px;color:var(--muted)">Users run your workflows remotely. You set the price.</div>
+          </div>
+          <div class="panel" style="background:var(--surface-2);text-align:center;padding:20px 16px">
+            <div style="font-size:1.5em;margin-bottom:8px">💸</div>
+            <div style="font-weight:600;font-size:13px;margin-bottom:4px">Earn</div>
+            <div style="font-size:12px;color:var(--muted)">Money goes straight to your bank. Automatic payouts.</div>
+          </div>
+        </div>
+
+        <!-- Signup Form -->
+        <div class="panel" style="background:var(--surface-2);margin-top:24px;padding:24px">
+          <h3 style="font-size:16px;margin:0 0 4px">🚀 Start Earning</h3>
+          <p style="color:var(--muted);font-size:13px;margin:0 0 16px">Register to connect your bank and start getting paid.</p>
+          <div style="display:grid;gap:12px;max-width:400px">
+            <input type="text" id="net-reg-name" placeholder="Your name" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:14px">
+            <input type="email" id="net-reg-email" placeholder="you@example.com" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:14px">
+            <div id="net-reg-error" style="color:var(--danger);font-size:13px;display:none"></div>
+            <button class="primary" onclick="netRegister()" id="net-reg-btn" style="padding:12px;font-size:15px;font-weight:700">Start Earning →</button>
+          </div>
+          <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
+            <details style="font-size:12px;color:var(--muted)">
+              <summary style="cursor:pointer">Already registered? Enter your provider key</summary>
+              <div style="display:flex;gap:8px;margin-top:8px">
+                <input type="text" id="net-existing-key" placeholder="ccn_sk_..." style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;flex:1">
+                <button class="secondary" onclick="netLoginKey()" style="padding:8px 14px;font-size:12px">Connect</button>
+              </div>
+            </details>
+          </div>
         </div>
       </div>
 
-      <div style="margin-top:20px">
-        <h3 style="font-size:15px;margin:0 0 12px">Published Workflows</h3>
-        <div id="gw-workflows" style="display:grid;gap:8px"></div>
-      </div>
-
-      <div style="margin-top:20px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <h3 style="font-size:15px;margin:0">API Keys</h3>
-          <button class="secondary" onclick="gwCreateKey()" style="padding:6px 14px;font-size:12px">+ Create Key</button>
+      <!-- State 2: Registered — provider dashboard -->
+      <div id="net-dashboard" style="display:none">
+        <div class="section-title">
+          <h2>💰 Network</h2>
+          <div class="row" style="gap:8px;align-items:center">
+            <span id="net-status-dot" style="width:10px;height:10px;border-radius:50%;background:#f35d6a;display:inline-block"></span>
+            <span id="net-status-text" style="color:var(--muted);font-size:13px">Checking...</span>
+          </div>
         </div>
-        <div id="gw-keys" style="display:grid;gap:8px"></div>
+
+        <!-- Earnings Cards -->
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px">
+          <div class="panel" style="background:var(--surface-2);text-align:center;padding:20px">
+            <div style="font-size:1.6em;font-weight:800;color:var(--success)" id="net-earned">$0.00</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">Total Earned</div>
+          </div>
+          <div class="panel" style="background:var(--surface-2);text-align:center;padding:20px">
+            <div style="font-size:1.6em;font-weight:800;color:var(--warning)" id="net-pending">$0.00</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">Pending Payout</div>
+          </div>
+          <div class="panel" style="background:var(--surface-2);text-align:center;padding:20px">
+            <div style="font-size:1.6em;font-weight:800;color:var(--accent)" id="net-transferred">$0.00</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:4px">Transferred</div>
+          </div>
+        </div>
+
+        <!-- Connection Command -->
+        <div class="panel" style="background:var(--surface-2);margin-top:16px;padding:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <h3 style="font-size:14px;margin:0">⚡ Connect Your GPU</h3>
+              <p style="color:var(--muted);font-size:12px;margin:4px 0 0">Run this command to start earning:</p>
+            </div>
+            <button class="secondary" id="net-copy-cmd" onclick="netCopyCmd()" style="padding:6px 14px;font-size:12px">📋 Copy</button>
+          </div>
+          <code id="net-connect-cmd" style="display:block;background:var(--bg);padding:10px 14px;border-radius:8px;font-size:12px;margin-top:10px;word-break:break-all;user-select:all"></code>
+        </div>
+
+        <!-- Workflows with Pricing -->
+        <div style="margin-top:20px">
+          <h3 style="font-size:15px;margin:0 0 12px">Your Workflows</h3>
+          <p style="color:var(--muted);font-size:13px;margin:-8px 0 12px">Enable workflows and set your price. Consumers pay your price + 40% platform fee.</p>
+          <div id="net-workflows" style="display:grid;gap:10px"></div>
+        </div>
+
+        <!-- Recent Earnings -->
+        <div style="margin-top:20px">
+          <h3 style="font-size:15px;margin:0 0 12px">Recent Earnings</h3>
+          <div id="net-earnings" style="display:grid;gap:4px"></div>
+        </div>
+
+        <!-- Disconnect -->
+        <div style="margin-top:24px;padding-top:16px;border-top:1px solid var(--border)">
+          <button class="secondary" onclick="netLogout()" style="font-size:12px;padding:6px 14px;color:var(--danger)">Disconnect Provider Account</button>
+        </div>
       </div>
     </section>
   </main>
@@ -663,135 +769,212 @@
       document.getElementById('workflows').classList.toggle('hidden', id !== 'workflows');
       document.getElementById('pipelines').classList.toggle('hidden', id !== 'pipelines');
       document.getElementById('gallery').classList.toggle('hidden', id !== 'gallery');
-      document.getElementById('gateway').classList.toggle('hidden', id !== 'gateway');
+      document.getElementById('network').classList.toggle('hidden', id !== 'network');
       if (id === 'gallery') {
         refreshGallery();
       }
       if (id === 'pipelines') {
         renderPipelines();
       }
-      if (id === 'gateway') {
-        gwRefresh();
+      if (id === 'network') {
+        netInit();
       }
     }
 
-    // --- Gateway Integration ---
+    // --- Network (Provider) ---
     const GW_URL = `${location.protocol}//${location.hostname}:8788`;
-    let gwOnline = false;
+    let netProviderKey = localStorage.getItem('ccn_provider_key') || '';
 
-    async function gwApi(path, opts = {}) {
-      const res = await fetch(GW_URL + path, opts);
-      return res;
+    function calcEarnings() {
+      const price = parseFloat(document.getElementById('calc-price').value) || 0.35;
+      const runs = parseInt(document.getElementById('calc-runs').value) || 100;
+      document.getElementById('calc-runs-val').textContent = runs;
+      const daily = price * runs;
+      const monthly = daily * 30;
+      const yearly = daily * 365;
+      document.getElementById('calc-daily').textContent = '$' + daily.toFixed(0);
+      document.getElementById('calc-monthly').textContent = '$' + monthly.toLocaleString('en-US', {maximumFractionDigits: 0});
+      document.getElementById('calc-yearly').textContent = '$' + yearly.toLocaleString('en-US', {maximumFractionDigits: 0});
     }
 
-    async function gwRefresh() {
-      // Check health
-      const dot = document.getElementById('gw-status-dot');
-      const text = document.getElementById('gw-status-text');
-      const stats = document.getElementById('gw-stats');
-      try {
-        const res = await fetch(GW_URL + '/api/v1/health');
-        const data = await res.json();
-        gwOnline = true;
-        dot.style.background = 'var(--success)';
-        text.textContent = 'Online';
-        const gpu = data.gpu_info?.devices?.[0];
-        const vramTotal = gpu ? (gpu.vram_total / 1e9).toFixed(1) : '?';
-        const vramFree = gpu ? (gpu.vram_free / 1e9).toFixed(1) : '?';
-        stats.innerHTML = `Queue: <strong>${data.queue_depth}</strong> jobs &nbsp;|&nbsp; GPU: ${gpu?.name?.split(':')[0]?.replace('cuda:0 ','') || '?'} &nbsp;|&nbsp; VRAM: ${vramFree}/${vramTotal} GB free`;
-      } catch(e) {
-        gwOnline = false;
-        dot.style.background = 'var(--danger)';
-        text.textContent = 'Offline — start with: comfyclaw gateway start';
-        stats.innerHTML = '—';
+    async function netInit() {
+      netProviderKey = localStorage.getItem('ccn_provider_key') || '';
+      if (netProviderKey) {
+        document.getElementById('net-pitch').style.display = 'none';
+        document.getElementById('net-dashboard').style.display = '';
+        await netRefreshDashboard();
+      } else {
+        document.getElementById('net-pitch').style.display = '';
+        document.getElementById('net-dashboard').style.display = 'none';
+        calcEarnings();
       }
-      // Render workflows with publish toggles
-      gwRenderWorkflows();
-      // Render API keys (only if online)
-      if (gwOnline) gwRenderKeys();
     }
 
-    function gwRenderWorkflows() {
-      const el = document.getElementById('gw-workflows');
-      if (!state.workflows?.length) { el.innerHTML = '<div style="color:var(--muted)">No workflows configured</div>'; return; }
+    async function netProviderApi(path, opts = {}) {
+      const headers = opts.headers || {};
+      headers['Authorization'] = `Bearer ${netProviderKey}`;
+      if (opts.body) headers['Content-Type'] = 'application/json';
+      return fetch(GW_URL + '/api/v1' + path, { ...opts, headers });
+    }
+
+    async function netRegister() {
+      const name = document.getElementById('net-reg-name').value.trim();
+      const email = document.getElementById('net-reg-email').value.trim();
+      const errEl = document.getElementById('net-reg-error');
+      const btn = document.getElementById('net-reg-btn');
+      if (!name || !email) { errEl.textContent = 'Name and email required'; errEl.style.display = ''; return; }
+      btn.disabled = true; btn.textContent = 'Registering...';
+      try {
+        const res = await fetch(GW_URL + '/api/v1/provider/register', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ name, email })
+        });
+        const data = await res.json();
+        if (!res.ok) { errEl.textContent = data.error || 'Registration failed'; errEl.style.display = ''; btn.disabled = false; btn.textContent = 'Start Earning →'; return; }
+        if (data.api_key) {
+          localStorage.setItem('ccn_provider_key', data.api_key);
+          netProviderKey = data.api_key;
+        }
+        if (data.onboarding_url) {
+          window.open(data.onboarding_url, '_blank');
+        }
+        netInit();
+      } catch(e) { errEl.textContent = 'Connection error'; errEl.style.display = ''; }
+      btn.disabled = false; btn.textContent = 'Start Earning →';
+    }
+
+    function netLoginKey() {
+      const key = document.getElementById('net-existing-key').value.trim();
+      if (!key) return;
+      localStorage.setItem('ccn_provider_key', key);
+      netProviderKey = key;
+      netInit();
+    }
+
+    async function netRefreshDashboard() {
+      // Fetch provider status
+      const dot = document.getElementById('net-status-dot');
+      const text = document.getElementById('net-status-text');
+      try {
+        const res = await netProviderApi('/provider/status');
+        if (res.status === 401) { netLogout(); return; }
+        const data = await res.json();
+        const status = data.provider?.status || 'unknown';
+        dot.style.background = status === 'active' ? 'var(--success)' : status === 'onboarding' ? 'var(--warning)' : 'var(--danger)';
+        text.textContent = status === 'active' ? 'Active' : status === 'onboarding' ? 'Complete Stripe setup' : status;
+        // Earnings
+        const earn = data.earnings || {};
+        document.getElementById('net-earned').textContent = '$' + ((earn.total_cents || 0) / 100).toFixed(2);
+        document.getElementById('net-pending').textContent = '$' + ((earn.pending_cents || 0) / 100).toFixed(2);
+        document.getElementById('net-transferred').textContent = '$' + ((earn.transferred_cents || 0) / 100).toFixed(2);
+      } catch(e) {
+        dot.style.background = 'var(--danger)';
+        text.textContent = 'Gateway offline';
+      }
+      // Connect command
+      document.getElementById('net-connect-cmd').textContent = `comfyclaw network connect --gateway ${GW_URL} --key ${netProviderKey}`;
+      // Render workflows
+      netRenderWorkflows();
+      // Fetch earnings list
+      netRenderEarnings();
+    }
+
+    function netRenderWorkflows() {
+      const el = document.getElementById('net-workflows');
+      if (!state.workflows?.length) { el.innerHTML = '<div style="color:var(--muted)">No workflows yet. Add one in the Workflows tab!</div>'; return; }
       el.innerHTML = state.workflows.map(wf => {
         const pub = wf.published ? true : false;
-        const primaryCount = (wf.primaryInputNodes || []).length;
-        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--surface-2);border:1px solid var(--border);border-radius:12px">
-          <div style="display:flex;align-items:center;gap:10px">
-            <span style="font-size:1.3em">${wf.emoji || '🧩'}</span>
-            <div>
-              <div style="font-weight:600;font-size:14px">${wf.title || 'Untitled'}${pub ? ' <span style="background:rgba(0,229,255,0.15);color:var(--accent);padding:2px 8px;border-radius:99px;font-size:11px;font-weight:500;margin-left:6px">PUBLISHED</span>' : ''}</div>
-              <div style="font-size:12px;color:var(--muted)">${primaryCount} inputs exposed</div>
+        const price = wf.provider_price_cents ? (wf.provider_price_cents / 100).toFixed(2) : '';
+        const defaultPrice = wf.outputType === 'video' ? '2.00' : wf.title?.includes('I2I') ? '0.50' : '0.35';
+        const displayPrice = price || defaultPrice;
+        const consumerPrice = (parseFloat(displayPrice) * 1.4).toFixed(2);
+        return `<div style="padding:14px 16px;background:var(--surface-2);border:1px solid ${pub ? 'var(--accent)' : 'var(--border)'};border-radius:12px;${pub ? 'box-shadow:0 0 0 1px rgba(0,229,255,0.2)' : ''}">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:1.3em">${wf.emoji || '🧩'}</span>
+              <div>
+                <div style="font-weight:600;font-size:14px">${wf.title || 'Untitled'}</div>
+                <div style="font-size:12px;color:var(--muted)">${(wf.primaryInputNodes || []).length} inputs</div>
+              </div>
             </div>
+            <label style="position:relative;width:44px;height:24px;cursor:pointer">
+              <input type="checkbox" ${pub ? 'checked' : ''} onchange="netToggleWf('${wf.id}', this.checked)" style="opacity:0;width:0;height:0;position:absolute">
+              <span style="position:absolute;inset:0;background:${pub ? 'var(--accent)' : 'var(--border)'};border-radius:24px;transition:0.2s"></span>
+              <span style="position:absolute;top:3px;left:${pub ? '23px' : '3px'};width:18px;height:18px;background:#fff;border-radius:50%;transition:0.2s"></span>
+            </label>
           </div>
-          <label style="position:relative;width:44px;height:24px;cursor:pointer">
-            <input type="checkbox" ${pub ? 'checked' : ''} onchange="gwTogglePublish('${wf.id}', this.checked)" style="opacity:0;width:0;height:0">
-            <span style="position:absolute;inset:0;background:${pub ? 'var(--accent)' : 'var(--border)'};border-radius:24px;transition:0.2s"></span>
-            <span style="position:absolute;top:3px;left:${pub ? '23px' : '3px'};width:18px;height:18px;background:#fff;border-radius:50%;transition:0.2s"></span>
-          </label>
+          ${pub ? `<div style="display:flex;align-items:center;gap:12px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">
+            <div style="flex:1">
+              <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:3px">Your price</label>
+              <div style="display:flex;align-items:center;gap:4px">
+                <span style="color:var(--success);font-weight:700;font-size:13px">$</span>
+                <input type="number" value="${displayPrice}" min="0.05" step="0.05" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);width:80px;font-size:13px" onchange="netSetPrice('${wf.id}', this.value)">
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:11px;color:var(--muted)">Consumer pays</div>
+              <div style="font-size:14px;font-weight:700;color:var(--success)">$${consumerPrice}</div>
+            </div>
+          </div>` : ''}
         </div>`;
       }).join('');
     }
 
-    async function gwTogglePublish(wfId, publish) {
+    async function netToggleWf(wfId, publish) {
       const wf = state.workflows.find(w => w.id === wfId);
       if (!wf) return;
       wf.published = publish;
       await api.put('/api/workflows/' + wfId, wf);
-      gwRenderWorkflows();
+      netRenderWorkflows();
     }
 
-    async function gwRenderKeys() {
-      const el = document.getElementById('gw-keys');
-      try {
-        const res = await fetch(GW_URL + '/api/v1/keys');
-        if (res.status === 401) { el.innerHTML = '<div style="color:var(--muted)">No API keys configured (open access mode)</div>'; return; }
-        const keys = await res.json();
-        if (!keys.length) { el.innerHTML = '<div style="color:var(--muted)">No API keys — gateway runs in open mode</div>'; return; }
-        el.innerHTML = keys.map(k => `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px">
-          <div>
-            <code style="font-size:12px">${k.key}</code>
-            <span style="color:var(--muted);font-size:12px;margin-left:8px">${k.label}</span>
-          </div>
-          <button class="secondary" onclick="gwRevokeKey('${k.full_key}')" style="padding:4px 10px;font-size:11px;color:var(--danger)">Revoke</button>
-        </div>`).join('');
-      } catch(e) {
-        el.innerHTML = '<div style="color:var(--muted)">Could not load keys</div>';
-      }
+    async function netSetPrice(wfId, price) {
+      const cents = Math.round(parseFloat(price) * 100);
+      if (cents < 5) return;
+      const wf = state.workflows.find(w => w.id === wfId);
+      if (!wf) return;
+      wf.provider_price_cents = cents;
+      await api.put('/api/workflows/' + wfId, wf);
+      netRenderWorkflows();
     }
 
-    async function gwCreateKey() {
-      const label = prompt('Label for the new API key:');
-      if (!label) return;
+    async function netRenderEarnings() {
+      const el = document.getElementById('net-earnings');
       try {
-        const res = await fetch(GW_URL + '/api/v1/keys/create', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({label})
-        });
-        const data = await res.json();
-        if (data.key) {
-          await navigator.clipboard.writeText(data.key);
-          alert('Key created and copied to clipboard:\\n\\n' + data.key);
-          gwRenderKeys();
+        const res = await netProviderApi('/provider/earnings');
+        const earnings = await res.json();
+        if (!Array.isArray(earnings) || !earnings.length) {
+          el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:12px">No earnings yet. Enable workflows and connect your GPU to start earning!</div>';
+          return;
         }
-      } catch(e) { alert('Failed to create key'); }
+        el.innerHTML = earnings.slice(0, 10).map(e => {
+          const date = e.created_at ? new Date(e.created_at * 1000).toLocaleDateString() : '—';
+          const statusColor = e.status === 'transferred' ? 'var(--success)' : e.status === 'pending' ? 'var(--warning)' : 'var(--danger)';
+          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface-2);border-radius:8px;font-size:13px">
+            <code style="font-size:11px;color:var(--muted)">${(e.job_id || '').slice(0,12)}…</code>
+            <span style="font-weight:700">$${(e.amount_cents / 100).toFixed(2)}</span>
+            <span style="color:${statusColor};font-size:11px">${e.status}</span>
+            <span style="color:var(--muted);font-size:11px">${date}</span>
+          </div>`;
+        }).join('');
+      } catch(e) { el.innerHTML = '<div style="color:var(--muted);font-size:13px">Could not load earnings</div>'; }
     }
 
-    async function gwRevokeKey(key) {
-      if (!confirm('Revoke this key?')) return;
-      try {
-        await fetch(GW_URL + '/api/v1/keys/revoke', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({key})
-        });
-        gwRenderKeys();
-      } catch(e) { alert('Failed to revoke'); }
+    function netCopyCmd() {
+      const cmd = document.getElementById('net-connect-cmd').textContent;
+      navigator.clipboard.writeText(cmd);
+      const btn = document.getElementById('net-copy-cmd');
+      btn.textContent = '✅ Copied!';
+      setTimeout(() => btn.textContent = '📋 Copy', 2000);
     }
 
-    setInterval(() => { if (document.getElementById('gateway') && !document.getElementById('gateway').classList.contains('hidden')) gwRefresh(); }, 10000);
+    function netLogout() {
+      localStorage.removeItem('ccn_provider_key');
+      netProviderKey = '';
+      netInit();
+    }
+
+    setInterval(() => { if (!document.getElementById('network')?.classList.contains('hidden') && netProviderKey) netRefreshDashboard(); }, 15000);
 
     async function load() {
       state.servers = await api.get('/api/servers');
