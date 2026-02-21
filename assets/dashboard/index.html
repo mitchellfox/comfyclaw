@@ -646,17 +646,22 @@
           </div>
         </div>
 
-        <!-- Connection Command -->
+        <!-- GPU Connection Control -->
         <div class="panel" style="background:var(--surface-2);margin-top:16px;padding:16px">
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <div>
-              <h3 style="font-size:14px;margin:0">⚡ Connect Your GPU</h3>
-              <p style="color:var(--muted);font-size:12px;margin:4px 0 0">Run this command to start earning:</p>
+            <div style="display:flex;align-items:center;gap:10px">
+              <span id="net-conn-dot" style="width:12px;height:12px;border-radius:50%;background:var(--danger);display:inline-block"></span>
+              <div>
+                <h3 style="font-size:14px;margin:0">⚡ GPU Connection</h3>
+                <span id="net-conn-text" style="color:var(--muted);font-size:12px">Disconnected</span>
+              </div>
             </div>
-            <button class="secondary" id="net-copy-cmd" onclick="netCopyCmd()" style="padding:6px 14px;font-size:12px">📋 Copy</button>
+            <div id="net-conn-btns">
+              <button class="primary" id="net-start-btn" onclick="netStartConnect()" style="padding:8px 18px;font-size:13px;font-weight:600">▶ Start</button>
+              <button class="secondary" id="net-stop-btn" onclick="netStopConnect()" style="padding:8px 18px;font-size:13px;display:none;color:var(--danger)">⏹ Stop</button>
+            </div>
           </div>
-          <code id="net-connect-cmd" style="display:block;background:var(--bg);padding:10px 14px;border-radius:8px;font-size:12px;margin-top:10px;word-break:break-all;user-select:all"></code>
-          <div style="font-size:11px;color:var(--muted);margin-top:6px">This connects your GPU to comfyclaw.app so it can receive and process jobs from users. Keep it running to earn.</div>
+          <div id="net-conn-log" style="display:none;margin-top:12px;background:var(--bg);border-radius:8px;padding:10px 14px;max-height:150px;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.6;color:var(--muted)"></div>
         </div>
 
         <!-- Live Marketplace Link -->
@@ -889,8 +894,9 @@
         dot.style.background = 'var(--danger)';
         text.textContent = 'Gateway offline';
       }
-      // Connect command
-      document.getElementById('net-connect-cmd').textContent = `comfyclaw network connect --gateway ${GW_URL} --key ${netProviderKey}`;
+      // Poll connection status
+      netPollConnection();
+      if (!netConnInterval) netConnInterval = setInterval(netPollConnection, 5000);
       // Render workflows
       netRenderWorkflows();
       // Fetch earnings list
@@ -983,6 +989,70 @@
       } catch(e) { el.innerHTML = '<div style="color:var(--muted);font-size:13px">Could not load earnings</div>'; }
     }
 
+    let netConnInterval = null;
+
+    async function netStartConnect() {
+      const btn = document.getElementById('net-start-btn');
+      btn.disabled = true; btn.textContent = 'Starting...';
+      try {
+        const res = await fetch('/api/network/start', {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ gateway_url: GW_URL, api_key: netProviderKey })
+        });
+        const data = await res.json();
+        if (data.status === 'started' || data.status === 'already_running') {
+          netPollConnection();
+          if (!netConnInterval) netConnInterval = setInterval(netPollConnection, 3000);
+        }
+      } catch(e) { console.error(e); }
+      btn.disabled = false; btn.textContent = '▶ Start';
+    }
+
+    async function netStopConnect() {
+      const btn = document.getElementById('net-stop-btn');
+      btn.disabled = true; btn.textContent = 'Stopping...';
+      try {
+        await fetch('/api/network/stop', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: '{}' });
+      } catch(e) {}
+      btn.disabled = false; btn.textContent = '⏹ Stop';
+      netPollConnection();
+    }
+
+    async function netPollConnection() {
+      try {
+        const res = await fetch('/api/network/status');
+        const data = await res.json();
+        const dot = document.getElementById('net-conn-dot');
+        const text = document.getElementById('net-conn-text');
+        const startBtn = document.getElementById('net-start-btn');
+        const stopBtn = document.getElementById('net-stop-btn');
+        const logEl = document.getElementById('net-conn-log');
+        if (data.running) {
+          dot.style.background = 'var(--success)';
+          text.textContent = `Connected (PID ${data.pid})`;
+          startBtn.style.display = 'none';
+          stopBtn.style.display = '';
+          // Show log
+          if (data.log && data.log.length) {
+            logEl.style.display = '';
+            logEl.innerHTML = data.log.map(l => `<div>${l.line.replace(/</g,'&lt;')}</div>`).join('');
+            logEl.scrollTop = logEl.scrollHeight;
+          }
+        } else {
+          dot.style.background = 'var(--danger)';
+          text.textContent = 'Disconnected';
+          startBtn.style.display = '';
+          stopBtn.style.display = 'none';
+          if (netConnInterval) { clearInterval(netConnInterval); netConnInterval = null; }
+          // Show last log lines if any
+          if (data.log && data.log.length) {
+            logEl.style.display = '';
+            logEl.innerHTML = data.log.map(l => `<div>${l.line.replace(/</g,'&lt;')}</div>`).join('');
+          }
+        }
+      } catch(e) {}
+    }
+
     async function netResumeOnboarding() {
       const btn = document.getElementById('net-resume-btn');
       if (btn) { btn.disabled = true; btn.textContent = 'Loading...'; }
@@ -996,14 +1066,6 @@
         }
       } catch(e) { alert('Connection error'); }
       if (btn) { btn.disabled = false; btn.textContent = 'Complete Stripe Setup →'; }
-    }
-
-    function netCopyCmd() {
-      const cmd = document.getElementById('net-connect-cmd').textContent;
-      navigator.clipboard.writeText(cmd);
-      const btn = document.getElementById('net-copy-cmd');
-      btn.textContent = '✅ Copied!';
-      setTimeout(() => btn.textContent = '📋 Copy', 2000);
     }
 
     function netLogout() {

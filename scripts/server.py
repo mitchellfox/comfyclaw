@@ -4,7 +4,10 @@ import json
 import os
 import random
 import re
+import subprocess
+import sys
 import threading
+import time
 import urllib.parse
 import urllib.request
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -15,6 +18,79 @@ CONFIG_PATH = os.path.join(CONFIG_DIR, "config.json")
 GALLERY_PATH = os.path.join(CONFIG_DIR, "gallery.json")
 OUTPUT_DIR = os.path.join(CONFIG_DIR, "outputs")
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), "..", "assets", "dashboard")
+COMFYCLAW_SCRIPT = os.path.join(os.path.dirname(__file__), "comfyclaw.py")
+
+# --- Network Connect Process Manager ---
+_net_proc = None
+_net_lock = threading.Lock()
+_net_log = []
+_net_log_lock = threading.Lock()
+_NET_LOG_MAX = 200
+
+
+def _net_reader(pipe, label):
+    """Read subprocess output and store in log buffer."""
+    for line in iter(pipe.readline, ''):
+        line = line.rstrip('\n')
+        if line:
+            with _net_log_lock:
+                _net_log.append({"ts": time.time(), "line": line})
+                if len(_net_log) > _NET_LOG_MAX:
+                    _net_log.pop(0)
+    pipe.close()
+
+
+def net_start(gateway_url: str, api_key: str, workflows: list = None) -> dict:
+    global _net_proc
+    with _net_lock:
+        if _net_proc and _net_proc.poll() is None:
+            return {"status": "already_running", "pid": _net_proc.pid}
+        with _net_log_lock:
+            _net_log.clear()
+        cmd = [sys.executable, COMFYCLAW_SCRIPT, "network", "connect",
+               "--gateway", gateway_url, "--key", api_key]
+        if workflows:
+            cmd.extend(["--workflows"] + workflows)
+        _net_proc = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, bufsize=1,
+        )
+        t = threading.Thread(target=_net_reader, args=(_net_proc.stdout, "net"), daemon=True)
+        t.start()
+        return {"status": "started", "pid": _net_proc.pid}
+
+
+def net_stop() -> dict:
+    global _net_proc
+    with _net_lock:
+        if not _net_proc or _net_proc.poll() is not None:
+            _net_proc = None
+            return {"status": "not_running"}
+        _net_proc.terminate()
+        try:
+            _net_proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            _net_proc.kill()
+        pid = _net_proc.pid
+        _net_proc = None
+        return {"status": "stopped", "pid": pid}
+
+
+def net_status() -> dict:
+    global _net_proc
+    with _net_lock:
+        if _net_proc and _net_proc.poll() is None:
+            running = True
+            pid = _net_proc.pid
+        else:
+            running = False
+            pid = None
+            if _net_proc:
+                _net_proc = None
+    with _net_log_lock:
+        log = list(_net_log[-50:])
+    return {"running": running, "pid": pid, "log": log}
+
 
 OUTPUT_TYPES = {
     "SaveImage",
@@ -458,6 +534,8 @@ class ComfyClawHandler(SimpleHTTPRequestHandler):
 
     def handle_api_get(self) -> None:
         data = ensure_config()
+        if self.path == "/api/network/status":
+            return _json_response(self, 200, net_status())
         if self.path == "/api/servers":
             return _json_response(self, 200, data.get("servers", []))
         if self.path == "/api/workflows":
@@ -564,6 +642,17 @@ class ComfyClawHandler(SimpleHTTPRequestHandler):
 
     def handle_api_post(self) -> None:
         data = ensure_config()
+        if self.path == "/api/network/start":
+            payload = _read_json(self)
+            gateway_url = payload.get("gateway_url", "").strip()
+            api_key = payload.get("api_key", "").strip()
+            if not gateway_url or not api_key:
+                return _json_response(self, 400, {"error": "gateway_url and api_key required"})
+            workflows = payload.get("workflows")
+            result = net_start(gateway_url, api_key, workflows)
+            return _json_response(self, 200, result)
+        if self.path == "/api/network/stop":
+            return _json_response(self, 200, net_stop())
         if self.path == "/api/servers":
             payload = _read_json(self)
             payload.setdefault("id", os.urandom(6).hex())
