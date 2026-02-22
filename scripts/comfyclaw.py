@@ -1498,10 +1498,35 @@ def network_connect(args: argparse.Namespace) -> None:
                 with send_lock:
                     ws_send(sock, msg_dict)
 
-            # Send ready message
+            # Build full workflow metadata for gateway
+            def _build_workflow_meta():
+                """Build workflow metadata list from current config."""
+                fresh = ensure_config()
+                meta = []
+                for wf_id in workflows:
+                    wf = next((w for w in fresh.get("workflows", []) if w["id"] == wf_id), None)
+                    if wf:
+                        meta.append({
+                            "id": wf["id"],
+                            "title": wf.get("title", wf["id"][:12]),
+                            "emoji": wf.get("emoji", ""),
+                            "description": wf.get("description", ""),
+                            "price_cents": wf.get("priceCents") or wf.get("price_cents") or 0,
+                            "output_type": wf.get("outputType") or wf.get("output_type") or "image",
+                            "estimated_time_seconds": wf.get("estimatedTimeSeconds") or wf.get("estimated_time_seconds") or 30,
+                            "primary_input_nodes": wf.get("primaryInputNodes", []),
+                            "showcase_images": wf.get("showcaseImages", []),
+                        })
+                return meta
+
+            workflow_meta = _build_workflow_meta()
+            config_mtime = os.path.getmtime(CONFIG_PATH) if os.path.exists(CONFIG_PATH) else 0
+
+            # Send ready message with full workflow metadata
             safe_ws_send({
                 "type": "ready",
                 "workflows": workflows,
+                "workflow_meta": workflow_meta,
                 "gpu_info": gpu_info,
             })
             print(f"✅ Connected! Listening for jobs...")
@@ -1518,6 +1543,18 @@ def network_connect(args: argparse.Namespace) -> None:
                     msg = json.loads(frame.decode("utf-8"))
 
                     if msg.get("type") == "ping":
+                        # Check for config changes on each ping (heartbeat-driven)
+                        try:
+                            new_mtime = os.path.getmtime(CONFIG_PATH) if os.path.exists(CONFIG_PATH) else 0
+                            if new_mtime > config_mtime:
+                                config_mtime = new_mtime
+                                new_meta = _build_workflow_meta()
+                                if new_meta != workflow_meta:
+                                    workflow_meta = new_meta
+                                    safe_ws_send({"type": "update_workflows", "workflows": workflows, "workflow_meta": workflow_meta})
+                                    print(f"🔄 Config changed — updated workflows sent to gateway")
+                        except Exception:
+                            pass
                         safe_ws_send({"type": "pong"})
 
                     elif msg.get("type") == "job":
