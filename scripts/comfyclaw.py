@@ -1201,7 +1201,11 @@ def network_connect(args: argparse.Namespace) -> None:
     def ws_send(sock, msg_dict):
         payload = json.dumps(msg_dict).encode("utf-8")
         mask = os.urandom(4)
-        masked = bytes(b ^ mask[i % 4] for i, b in enumerate(payload))
+        # Fast XOR masking using bytearray for large payloads
+        ba = bytearray(payload)
+        for i in range(len(ba)):
+            ba[i] ^= mask[i & 3]
+        masked = bytes(ba)
         length = len(masked)
         header = bytes([0x81])  # FIN + text
         if length < 126:
@@ -1276,8 +1280,9 @@ def network_connect(args: argparse.Namespace) -> None:
 
                     # Binary frame = preview image from ComfyUI
                     # Format: 8-byte header (2x uint32) then JPEG/PNG data
-                    # Header: [type_le32][format_le32] where format 1=JPEG, 2=PNG
                     # Detect by looking for JPEG (FFD8) or PNG (8950) magic after header
+                    if opcode == 0x2:
+                        print(f"[PREVIEW] Binary frame: len={len(payload)} first={payload[:16].hex() if payload else 'empty'} has_cb={preview_cb is not None}", flush=True)
                     if opcode == 0x2 and len(payload) > 16 and preview_cb:
                         now = time.time()
                         if now - last_preview >= 0.5:  # throttle to max 2 fps
@@ -1503,7 +1508,7 @@ def network_connect(args: argparse.Namespace) -> None:
             print(f"   Press Ctrl+C to disconnect\n")
 
             # Main loop
-            sock.settimeout(10)
+            sock.settimeout(60)  # 60s timeout for large result uploads
             while True:
                 try:
                     frame = ws_recv(sock)
@@ -1532,9 +1537,11 @@ def network_connect(args: argparse.Namespace) -> None:
                                 pass
                         def _relay_preview(img_b64, mime, _jid=job_id):
                             try:
-                                safe_ws_send({"type": "preview", "job_id": _jid, "image": img_b64, "mime": mime})
-                            except Exception:
-                                pass
+                                msg = {"type": "preview", "job_id": _jid, "image": img_b64, "mime": mime}
+                                safe_ws_send(msg)
+                                print(f"[PREVIEW] Sent to gateway: job={_jid[:12]} size={len(img_b64)}", flush=True)
+                            except Exception as e:
+                                print(f"[PREVIEW] SEND FAILED: {e}", flush=True)
                         # Create stop event to kill tracking thread when job finishes
                         track_stop = threading.Event()
                         result = execute_job(msg, progress_cb=_relay_progress, preview_cb=_relay_preview, _track_stop=track_stop)
