@@ -1275,15 +1275,27 @@ def network_connect(args: argparse.Namespace) -> None:
                         continue
 
                     # Binary frame = preview image from ComfyUI
-                    # Format: first byte = type (1=JPEG, 2=PNG), rest = image data
-                    if opcode == 0x2 and len(payload) > 8 and preview_cb:
+                    # Format: 8-byte header (2x uint32) then JPEG/PNG data
+                    # Header: [type_le32][format_le32] where format 1=JPEG, 2=PNG
+                    # Detect by looking for JPEG (FFD8) or PNG (8950) magic after header
+                    if opcode == 0x2 and len(payload) > 16 and preview_cb:
                         now = time.time()
                         if now - last_preview >= 0.5:  # throttle to max 2 fps
-                            img_type = payload[0]
-                            img_data = payload[4:]  # skip 4-byte header (type + padding)
-                            mime = "image/jpeg" if img_type == 1 else "image/png"
-                            preview_cb(_b64.b64encode(img_data).decode(), mime)
-                            last_preview = now
+                            # Find image start by looking for JPEG/PNG magic
+                            img_data = None
+                            mime = "image/jpeg"
+                            for offset in (8, 4):
+                                if payload[offset:offset+2] == b'\xff\xd8':
+                                    img_data = payload[offset:]
+                                    mime = "image/jpeg"
+                                    break
+                                elif payload[offset:offset+4] == b'\x89PNG':
+                                    img_data = payload[offset:]
+                                    mime = "image/png"
+                                    break
+                            if img_data:
+                                preview_cb(_b64.b64encode(img_data).decode(), mime)
+                                last_preview = now
                         continue
 
                     try:
