@@ -1511,7 +1511,7 @@ def network_connect(args: argparse.Namespace) -> None:
                             "title": wf.get("title", wf["id"][:12]),
                             "emoji": wf.get("emoji", ""),
                             "description": wf.get("description", ""),
-                            "price_cents": wf.get("priceCents") or wf.get("price_cents") or 0,
+                            "price_cents": wf.get("provider_price_cents") or wf.get("priceCents") or wf.get("price_cents") or 0,
                             "output_type": wf.get("outputType") or wf.get("output_type") or "image",
                             "estimated_time_seconds": wf.get("estimatedTimeSeconds") or wf.get("estimated_time_seconds") or 30,
                             "primary_input_nodes": wf.get("primaryInputNodes", []),
